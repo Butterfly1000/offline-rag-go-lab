@@ -1,12 +1,13 @@
 package chunking
 
 import (
-	"strings"
+	"strings" // TestBuildChunksSplitsLongLineWithStableIDs 里 Repeat 生成长文本
 	"testing"
 
 	world "offline-rag-go-lab/internal/gateway/level1_world"
 )
 
+// TestBuildChunksUsesHeadingAsSectionTitle 验证 Markdown # 标题会并入 chunk.Title。
 func TestBuildChunksUsesHeadingAsSectionTitle(t *testing.T) {
 	chunks, err := BuildChunks(world.IngestRequest{
 		DocumentID: "policy",
@@ -15,7 +16,7 @@ func TestBuildChunksUsesHeadingAsSectionTitle(t *testing.T) {
 		Text:       "# 申请条件\n用户在购买后 7 天内可以申请退款。",
 	})
 	if err != nil {
-		t.Fatalf("BuildChunks returned error: %v", err)
+		t.Fatalf("BuildChunks returned error: %v", err) // 失败则终止整个测试
 	}
 	if len(chunks) != 1 {
 		t.Fatalf("expected 1 chunk, got %d", len(chunks))
@@ -25,8 +26,9 @@ func TestBuildChunksUsesHeadingAsSectionTitle(t *testing.T) {
 	}
 }
 
+// TestBuildChunksSplitsLongLineWithStableIDs 验证超长单行会被切成多块且 ID 连续。
 func TestBuildChunksSplitsLongLineWithStableIDs(t *testing.T) {
-	longLine := strings.Repeat("很长的说明文本", 20)
+	longLine := strings.Repeat("很长的说明文本", 20) // 重复 20 次，超过 defaultChunkMaxChars
 	chunks, err := BuildChunks(world.IngestRequest{
 		DocumentID: "guide",
 		Title:      "使用说明",

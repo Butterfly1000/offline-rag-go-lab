@@ -1,18 +1,20 @@
+// Package boss_test 用外部测试包验证整条 gateway 编排链路（黑盒风格）。
 package boss_test
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"os"         // ReadDir / ReadFile 检查日志文件
+	"path/filepath" // 临时目录路径拼接
+	"strings"    // Contains 断言回答内容
 	"testing"
 
 	gateway "offline-rag-go-lab/internal/gateway"
 )
 
+// newTestApp 为每个测试创建独立临时目录，避免污染 storage/ 和测试间互相影响。
 func newTestApp(t *testing.T) *gateway.App {
-	t.Helper()
+	t.Helper() // 失败时堆栈显示调用方测试函数，而非 newTestApp
 
-	baseDir := t.TempDir()
+	baseDir := t.TempDir() // 测试结束自动删除的临时目录
 	app := gateway.NewApp(gateway.Config{
 		LogDir:              filepath.Join(baseDir, "logs"),
 		DocDir:              filepath.Join(baseDir, "docs"),
@@ -27,6 +29,7 @@ func newTestApp(t *testing.T) *gateway.App {
 	return app
 }
 
+// TestIngestThenDebugRetrievalReturnsExpectedChunk ingest 后检索应命中对应文档。
 func TestIngestThenDebugRetrievalReturnsExpectedChunk(t *testing.T) {
 	app := newTestApp(t)
 
@@ -53,6 +56,7 @@ func TestIngestThenDebugRetrievalReturnsExpectedChunk(t *testing.T) {
 	}
 }
 
+// TestSplitPreviewReturnsParagraphChunks 空行分段应得到 3 个 chunk，ID 为 guide#0,#1,#2。
 func TestSplitPreviewReturnsParagraphChunks(t *testing.T) {
 	app := newTestApp(t)
 
@@ -78,6 +82,7 @@ func TestSplitPreviewReturnsParagraphChunks(t *testing.T) {
 	}
 }
 
+// TestChatUsesKnowledgeWhenRelevantChunkExists 有相关文档时 Chat 应 UsedKnowledge=true 且回答含关键词。
 func TestChatUsesKnowledgeWhenRelevantChunkExists(t *testing.T) {
 	app := newTestApp(t)
 
@@ -114,6 +119,7 @@ func TestChatUsesKnowledgeWhenRelevantChunkExists(t *testing.T) {
 	}
 }
 
+// TestPromptPreviewIncludesRetrievedKnowledgeSection prompt 预览应含 [Relevant Knowledge] 和命中正文。
 func TestPromptPreviewIncludesRetrievedKnowledgeSection(t *testing.T) {
 	app := newTestApp(t)
 
@@ -140,6 +146,7 @@ func TestPromptPreviewIncludesRetrievedKnowledgeSection(t *testing.T) {
 	}
 }
 
+// TestChatFallsBackGracefullyWhenNoKnowledgeHit 无关问题应不命中知识库，走 mock 兜底话术。
 func TestChatFallsBackGracefullyWhenNoKnowledgeHit(t *testing.T) {
 	app := newTestApp(t)
 
@@ -165,6 +172,7 @@ func TestChatFallsBackGracefullyWhenNoKnowledgeHit(t *testing.T) {
 	}
 }
 
+// TestChatWritesJSONLLog Chat 成功后应在 LogDir 生成含 session_id 的 JSONL 行。
 func TestChatWritesJSONLLog(t *testing.T) {
 	baseDir := t.TempDir()
 	app := gateway.NewApp(gateway.Config{

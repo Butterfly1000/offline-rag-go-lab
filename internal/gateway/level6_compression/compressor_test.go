@@ -6,8 +6,10 @@ import (
 	world "offline-rag-go-lab/internal/gateway/level1_world"
 )
 
+// TestSimpleCompressorDedupesLimitsAndTruncates 验证压缩器三步：去重、限 1 条、截断 8 rune。
 func TestSimpleCompressorDedupesLimitsAndTruncates(t *testing.T) {
 	compressor := SimpleCompressor{}
+	// 前两条正文相同（去重后应留分数更高的 a#0）；第三条不同
 	hits := []world.RetrievalHit{
 		{
 			KnowledgeChunk: world.KnowledgeChunk{ChunkID: "a#0", Title: "FAQ", Text: "重复知识片段重复知识片段重复知识片段"},
@@ -23,7 +25,7 @@ func TestSimpleCompressorDedupesLimitsAndTruncates(t *testing.T) {
 		},
 	}
 
-	out := compressor.Compress(hits, 1, 8)
+	out := compressor.Compress(hits, 1, 8) // maxChunks=1, maxChars=8
 	if len(out) != 1 {
 		t.Fatalf("expected 1 compressed hit, got %d", len(out))
 	}
