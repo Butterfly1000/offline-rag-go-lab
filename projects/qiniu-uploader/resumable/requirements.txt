@@ -1,0 +1,2 @@
+# 断点续传上传脚本 qiniu_resumable_upload.py 所需依赖。
+qiniu>=7.0.0
