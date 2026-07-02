@@ -106,7 +106,63 @@
 
 ---
 
-## 7. 如何判断新模型有没有接对
+## 7. 你实际怎么告诉 AI
+
+你可以把和 AI 的协作拆成两个动作：
+
+1. 开始前先让它“读”
+2. 结束前再让它“写”
+
+这样切模型、切设备、切会话时最稳。
+
+### 开始前：让 AI 先读
+
+新开一个模型时，直接发这段：
+
+```text
+先阅读 docs/teaching/00-teaching-protocol.md 和 docs/teaching/00-learning-status.md。
+
+如果这次要继续 recent-window / memory 相关内容，再继续读：
+- docs/teaching/recent-window-layer-01.md
+- docs/teaching/recent-window-runtime-sop.md
+- docs/2026-06-29-recent-window-real-implementation-plan.md
+
+读取后先告诉我三件事：
+1. 我们现在学到哪了
+2. 下一小段应该讲什么
+3. 你这次会把哪些新结论写回 docs/teaching
+```
+
+这一步的目的不是让它立刻开讲，而是先确认它真的接上了上下文。
+
+### 结束前：让 AI 回写
+
+一轮教学快结束，或者你准备睡觉、切设备、切模型时，发这段：
+
+```text
+现在请收口并回写文档：
+
+1. 把这次我已经听懂的内容归档到 docs/teaching
+2. 更新 docs/teaching/00-learning-status.md，写明现在学到哪、下一章是什么
+3. 如果这次有新的运行步骤或验证结果，也补到 docs/teaching
+4. 最后告诉我：下一个模型接手前，最少必须先读哪几份文档
+```
+
+这一步的目标就是把“聊天上下文”变成“项目内文档”。
+
+### 如果 AI 教了一整晚
+
+第二天切到新模型前，再补一句：
+
+```text
+请先不要继续新内容，先检查昨晚是否已经把教学结果完整写回 docs/teaching；如果没有，先补齐再继续。
+```
+
+这样可以防止夜里讲了很多，但没有沉淀。
+
+---
+
+## 8. 如何判断新模型有没有接对
 
 如果新模型符合下面这些，就说明接得对：
 

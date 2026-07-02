@@ -1,0 +1,11 @@
+# Local runtime config
+config/*.env
+
+# Go build outputs
+recent-chat
+*.exe
+*.test
+*.out
+
+# macOS
+.DS_Store
