@@ -86,6 +86,57 @@ GOTOOLCHAIN=local GOWORK=off GOCACHE=/tmp/offline-rag-go-lab-gocache go run ./cm
 http://127.0.0.1:18092
 ```
 
+## Recent Chat Service
+
+recent-chat 是一条独立的“最近窗口”真实实现路径，监听 `http://127.0.0.1:18093`。
+
+Apply schema:
+
+```sql
+SOURCE sql/recentchat_messages.sql;
+```
+
+Config:
+
+```bash
+mkdir -p config
+cp config/recent-chat.env.example config/recent-chat.env
+```
+
+Edit `config/recent-chat.env`:
+
+```env
+RECENT_CHAT_MYSQL_DSN=root:123456@tcp(127.0.0.1:3306)/offline_rag?parseTime=true
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+```
+
+Run:
+
+```bash
+cd /Users/huangyanyu/offline-rag-go-lab
+go run ./cmd/recent-chat
+```
+
+If you need a temporary override, shell environment variables still win over the file.
+
+curl demo:
+
+```bash
+curl -X POST http://127.0.0.1:18093/chat \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "session_id":"s-001",
+    "user_id":"u-001",
+    "message":"帮我总结一下我们刚才聊了什么",
+    "model":"llama3",
+    "recent_limit":10,
+    "store_user_turn":true,
+    "store_assistant_turn":true
+  }'
+```
+
+响应会包含 `answer`、`used_messages` 和 `recent_window`。
+
 ## 最快体验
 
 ### 1. 导入知识
