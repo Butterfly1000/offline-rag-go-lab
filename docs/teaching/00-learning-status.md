@@ -134,6 +134,10 @@
 4. session summary 和 long-term memory 的边界
 5. 生产里如何把 recent / summary / memory / retrieval 合并
 
+这一章的第一个正式教学入口文档已经准备好：
+
+- [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
+
 ---
 
 ## 5. 后续推荐学习顺序
@@ -185,5 +189,6 @@
 2. [00-learning-status.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
 3. [recent-window-layer-01.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
 4. [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
+5. [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 
 然后从“第 2 层第一小段”开始继续，而不是重新回到项目介绍。

@@ -1,0 +1,11 @@
+.directory
+*.swp
+*.swo
+.idea
+input/
+data/
+example/testdata/
+*.dat
+*.log
+
+*.json

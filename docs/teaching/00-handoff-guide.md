@@ -26,10 +26,11 @@
 2. [00-learning-status.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
 3. [recent-window-layer-01.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
 4. [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
+5. [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 
 如果新模型要继续 recent-chat 的代码实现，也要让它读：
 
-5. [2026-06-29-recent-window-real-implementation-plan.md](/Users/huangyanyu/offline-rag-go-lab/docs/2026-06-29-recent-window-real-implementation-plan.md:1)
+6. [2026-06-29-recent-window-real-implementation-plan.md](/Users/huangyanyu/offline-rag-go-lab/docs/2026-06-29-recent-window-real-implementation-plan.md:1)
 
 ---
 
@@ -44,7 +45,8 @@
 2. docs/teaching/00-learning-status.md
 3. docs/teaching/recent-window-layer-01.md
 4. docs/teaching/recent-window-runtime-sop.md
-5. docs/2026-06-29-recent-window-real-implementation-plan.md
+5. docs/teaching/recent-window-layer-02-count-distortion.md
+6. docs/2026-06-29-recent-window-real-implementation-plan.md
 
 要求：
 - 按 teaching-protocol 里的方式继续教学
@@ -77,6 +79,7 @@
 - docs/2026-06-29-recent-window-real-implementation-plan.md
 - docs/teaching/recent-window-layer-01.md
 - docs/teaching/recent-window-runtime-sop.md
+- docs/teaching/recent-window-layer-02-count-distortion.md
 
 然后先告诉我：
 1. 当前已经完成了什么

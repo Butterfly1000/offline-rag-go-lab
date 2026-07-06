@@ -1,6 +1,9 @@
 # Local runtime config
 config/*.env
 
+# Local tokenizer assets
+assets/tokenizers/**/*.json
+
 # Go build outputs
 recent-chat
 *.exe
