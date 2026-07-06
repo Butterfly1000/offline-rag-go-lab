@@ -13,6 +13,15 @@ func NewService(store MessageStore, window RecentWindowBuilder, ollama OllamaCli
 	}
 }
 
+func NewServiceWithTokenWindow(store MessageStore, window RecentWindowBuilder, tokenWindow TokenBudgetWindowBuilder, ollama OllamaClient) Service {
+	return Service{
+		store:       store,
+		window:      window,
+		tokenWindow: tokenWindow,
+		ollama:      ollama,
+	}
+}
+
 func RegisterHandlers(mux *http.ServeMux, svc Service) {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{

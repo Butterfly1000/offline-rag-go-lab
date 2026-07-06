@@ -30,18 +30,20 @@ type ChatRequest struct {
 	Message         string `json:"message"`
 	Model           string `json:"model"`
 	RecentLimit     int    `json:"recent_limit"`
+	RecentTokenBudget int  `json:"recent_token_budget"`
 	SystemPrompt    string `json:"system_prompt"`
 	StoreUserTurn   bool   `json:"store_user_turn"`
 	StoreAssistTurn bool   `json:"store_assistant_turn"`
 }
 
 type ChatResponse struct {
-	Answer       string    `json:"answer"`
-	UsedMessages int       `json:"used_messages"`
-	SessionID    string    `json:"session_id"`
-	Model        string    `json:"model"`
-	CreatedAt    time.Time `json:"created_at"`
-	RecentWindow []Message `json:"recent_window"`
+	Answer           string    `json:"answer"`
+	UsedMessages     int       `json:"used_messages"`
+	UsedRecentTokens int       `json:"used_recent_tokens,omitempty"`
+	SessionID        string    `json:"session_id"`
+	Model            string    `json:"model"`
+	CreatedAt        time.Time `json:"created_at"`
+	RecentWindow     []Message `json:"recent_window"`
 }
 
 func (r ChatRequest) Validate() error {

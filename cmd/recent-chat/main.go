@@ -6,10 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"offline-rag-go-lab/internal/recentchat"
+	"offline-rag-go-lab/internal/tokenizerdemo"
 )
 
 func main() {
@@ -26,9 +28,12 @@ func main() {
 	}
 	defer db.Close()
 
-	service := recentchat.NewService(
+	tokenizerPath := envOrDefault("RECENT_CHAT_TOKENIZER_PATH", filepath.Join("assets", "tokenizers", "qwen2", "tokenizer.json"))
+
+	service := recentchat.NewServiceWithTokenWindow(
 		recentchat.NewMySQLMessageStore(db),
 		recentchat.CountWindowBuilder{},
+		recentchat.NewTokenBudgetWindowBuilder(tokenizerdemo.NewCounter(tokenizerPath)),
 		recentchat.NewHTTPOllamaClient(envOrDefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")),
 	)
 

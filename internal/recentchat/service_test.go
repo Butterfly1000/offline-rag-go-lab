@@ -60,10 +60,11 @@ func TestServiceChatsWithRecentWindowAndPersistsTurns(t *testing.T) {
 	}
 
 	svc := Service{
-		store:   store,
-		window:  CountWindowBuilder{},
-		ollama:  client,
-		nowFunc: fixedNow,
+		store:       store,
+		window:      CountWindowBuilder{},
+		tokenWindow: NewTokenBudgetWindowBuilder(fakeTokenCounter{counts: map[string]int{"old q": 2, "old a": 2}}),
+		ollama:      client,
+		nowFunc:     fixedNow,
 	}
 
 	resp, err := svc.Chat(ChatRequest{
@@ -107,6 +108,62 @@ func TestServiceChatsWithRecentWindowAndPersistsTurns(t *testing.T) {
 	}
 	if appended[1].Role != RoleAssistant || appended[1].Content != "new answer" {
 		t.Fatalf("unexpected persisted assistant turn: %#v", appended[1])
+	}
+}
+
+func TestServiceUsesTokenBudgetWindowWhenProvided(t *testing.T) {
+	store := &fakeMessageStore{
+		listRecentBySessionFn: func(sessionID string, limit int) ([]Message, error) {
+			return []Message{
+				{SessionID: sessionID, UserID: "u1", Role: RoleUser, Content: "old q"},
+				{SessionID: sessionID, UserID: "u1", Role: RoleAssistant, Content: "old a"},
+			}, nil
+		},
+	}
+	client := &fakeOllamaClient{
+		chatFn: func(req OllamaChatRequest) (OllamaChatResponse, error) {
+			if len(req.Messages) != 2 {
+				t.Fatalf("expected 2 messages, got %d", len(req.Messages))
+			}
+			if req.Messages[0].Content != "old a" {
+				t.Fatalf("expected newest message only, got %#v", req.Messages[0])
+			}
+			return OllamaChatResponse{Content: "ok"}, nil
+		},
+	}
+
+	svc := Service{
+		store:  store,
+		window: CountWindowBuilder{},
+		tokenWindow: NewTokenBudgetWindowBuilder(fakeTokenCounter{
+			counts: map[string]int{
+				"old q": 5,
+				"old a": 2,
+			},
+		}),
+		ollama:  client,
+		nowFunc: fixedNow,
+	}
+
+	resp, err := svc.Chat(ChatRequest{
+		SessionID:         "s1",
+		UserID:            "u1",
+		Message:           "new q",
+		Model:             "llama3",
+		RecentLimit:       10,
+		RecentTokenBudget: 3,
+	})
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if resp.UsedMessages != 1 {
+		t.Fatalf("unexpected used messages: %d", resp.UsedMessages)
+	}
+	if resp.UsedRecentTokens != 2 {
+		t.Fatalf("unexpected used recent tokens: %d", resp.UsedRecentTokens)
+	}
+	if len(resp.RecentWindow) != 1 || resp.RecentWindow[0].Content != "old a" {
+		t.Fatalf("unexpected recent window: %#v", resp.RecentWindow)
 	}
 }
 

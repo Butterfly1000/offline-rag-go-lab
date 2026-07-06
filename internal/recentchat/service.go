@@ -6,10 +6,11 @@ import (
 )
 
 type Service struct {
-	store   MessageStore
-	window  RecentWindowBuilder
-	ollama  OllamaClient
-	nowFunc func() time.Time
+	store       MessageStore
+	window      RecentWindowBuilder
+	tokenWindow TokenBudgetWindowBuilder
+	ollama      OllamaClient
+	nowFunc     func() time.Time
 }
 
 func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
@@ -29,11 +30,26 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		s.nowFunc = time.Now
 	}
 
-	recent, err := s.store.ListRecentBySession(req.SessionID, req.RecentLimit)
+	fetchLimit := req.RecentLimit
+	if fetchLimit <= 0 && req.RecentTokenBudget > 0 {
+		fetchLimit = 50
+	}
+
+	recent, err := s.store.ListRecentBySession(req.SessionID, fetchLimit)
 	if err != nil {
 		return ChatResponse{}, err
 	}
 	selected := s.window.Build(recent, req.RecentLimit)
+	usedRecentTokens := 0
+	if req.RecentTokenBudget > 0 {
+		if s.tokenWindow.counter == nil {
+			return ChatResponse{}, errors.New("token window builder is required for recent_token_budget")
+		}
+		selected, usedRecentTokens, err = s.tokenWindow.Build(recent, req.RecentTokenBudget)
+		if err != nil {
+			return ChatResponse{}, err
+		}
+	}
 
 	ollamaMessages := make([]OllamaMessage, 0, len(selected)+2)
 	if req.SystemPrompt != "" {
@@ -87,11 +103,12 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 	}
 
 	return ChatResponse{
-		Answer:       chatResp.Content,
-		UsedMessages: len(selected),
-		SessionID:    req.SessionID,
-		Model:        req.Model,
-		CreatedAt:    now,
-		RecentWindow: selected,
+		Answer:           chatResp.Content,
+		UsedMessages:     len(selected),
+		UsedRecentTokens: usedRecentTokens,
+		SessionID:        req.SessionID,
+		Model:            req.Model,
+		CreatedAt:        now,
+		RecentWindow:     selected,
 	}, nil
 }

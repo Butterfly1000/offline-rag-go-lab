@@ -108,6 +108,7 @@ Edit `config/recent-chat.env`:
 ```env
 RECENT_CHAT_MYSQL_DSN=root:123456@tcp(127.0.0.1:3306)/offline_rag?parseTime=true
 OLLAMA_BASE_URL=http://127.0.0.1:11434
+RECENT_CHAT_TOKENIZER_PATH=assets/tokenizers/qwen2/tokenizer.json
 ```
 
 Run:
@@ -136,6 +137,17 @@ curl -X POST http://127.0.0.1:18093/chat \
 ```
 
 响应会包含 `answer`、`used_messages` 和 `recent_window`。
+
+If you want to test token-budget recent window, add:
+
+```json
+"recent_token_budget": 20
+```
+
+Current behavior:
+
+- `recent_limit` limits how many history messages are fetched from MySQL
+- `recent_token_budget` limits how many recent-history tokens are kept before the request is sent to Ollama
 
 ## 最快体验
 
