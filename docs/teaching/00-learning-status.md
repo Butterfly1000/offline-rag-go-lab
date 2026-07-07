@@ -138,6 +138,7 @@
 
 - [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 - [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
+- [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 
 ---
 
@@ -192,5 +193,6 @@
 4. [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
 5. [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 6. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
+7. [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 
 然后从“第 2 层第一小段”开始继续，而不是重新回到项目介绍。
