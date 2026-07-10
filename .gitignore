@@ -6,6 +6,7 @@ assets/tokenizers/**/*.json
 
 # Go build outputs
 recent-chat
+tokenizer-inspect
 *.exe
 *.test
 *.out

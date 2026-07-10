@@ -112,6 +112,16 @@
 - 第 1 层完成
 - 第 2 层刚开始
 
+当前在第 2 层中插入 tokenizer 实战小课，已完成：
+
+1. tokenizer 启动时加载一次并重复编码
+2. 查看 `tokenizer.json` 的组件结构和词表规模
+
+文档：
+
+- [tokenizer-load-once-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-load-once-sop.md:1)
+- [tokenizer-inspect-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-inspect-sop.md:1)
+
 ---
 
 ## 4. 下一章是什么

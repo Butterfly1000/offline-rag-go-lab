@@ -1,6 +1,6 @@
 # Tokenizer Demo SOP
 
-主题：如何用 `qwen:7b` 对应的 tokenizer 在 Go 里做本地 token 计数
+主题：如何在 Go 里加载当前本地 tokenizer 资产并做 token 计数
 
 这份 SOP 只解决一件事：
 
@@ -75,6 +75,8 @@ assets/tokenizers/qwen2/tokenizer.json
 ```
 
 这个文件默认不会被 git 提交。
+
+注意：`qwen2` 是当前项目使用的目录名，不是文件来源证明。当前文件来自 `~/Dolphin/hf_model/tokenizer.json`，目前尚未证明它和 Ollama 中的 `qwen:7b` 完全匹配。
 
 ---
 
@@ -300,11 +302,11 @@ env GOCACHE=/private/tmp/offline-rag-go-lab-gocache GOSUMDB=off go run -mod=mod 
 
 这是这次最有价值的一个真实问题。
 
-当前使用的 Go tokenizer 库在加载 `Qwen2 tokenizer.json` 时，卡在一个正则表达式上。
+当前使用的 Go tokenizer 库在加载这份 `tokenizer.json` 时，卡在一个正则表达式上。
 
 原因是：
 
-- `Qwen2 tokenizer.json` 里有带回溯引用的正则，比如 `\\1`
+- 当前 `tokenizer.json` 里有带回溯引用的正则，比如 `\\1`
 - Go 标准库 `regexp` 不支持这种写法
 
 所以这次最终处理是：
@@ -320,20 +322,17 @@ env GOCACHE=/private/tmp/offline-rag-go-lab-gocache GOSUMDB=off go run -mod=mod 
 
 ## 10. 当前 demo 的边界
 
-这次 demo 已经是真实 tokenizer 计数，但它还有明确边界：
+这次 demo 已经由真实 tokenizer 执行编码，但它还有明确边界：
 
-1. 还没有接入 `recent-chat`
-2. 还没有实现 token-budget window
-3. 还没有应用完整 chat template
+1. 当前 tokenizer 资产与 `qwen:7b` 的严格匹配关系尚未验证
+2. 还没有应用完整 chat template
+3. recent-chat 当前主要计算每条消息的 `content`
 
 也就是说，这次先解决的是：
 
 **本地 tokenizer 怎么真实加载，Go 怎么真实计数。**
 
-下一步才是：
-
-- 把它接到 recent window
-- 按 token budget 从后往前装消息
+当前已经接入 recent window，并能按 token budget 从后往前装消息。后续需要继续补模型资产匹配验证和完整 chat template 计数。
 
 ---
 
@@ -342,5 +341,5 @@ env GOCACHE=/private/tmp/offline-rag-go-lab-gocache GOSUMDB=off go run -mod=mod 
 如果这一步理解了，你应该能确认下面三件事：
 
 1. `32768` 是模型上下文上限，不是 recent history 独占上限
-2. token 计数必须依赖与当前模型匹配的 tokenizer
+2. 生产级 token 计数必须依赖与当前模型经过来源或对照测试确认匹配的 tokenizer
 3. Go 可以直接本地加载 `tokenizer.json` 做真实 token 计数
