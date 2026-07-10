@@ -12,6 +12,7 @@ import (
 func main() {
 	defaultPath := filepath.Join("assets", "tokenizers", "qwen2", "tokenizer.json")
 	tokenizerPath := flag.String("tokenizer", defaultPath, "path to tokenizer.json")
+	expectedSHA256 := flag.String("expect-sha256", "", "fail if tokenizer SHA256 differs from this value")
 	flag.Parse()
 
 	summary, err := tokenizerdemo.InspectFile(*tokenizerPath)
@@ -28,6 +29,13 @@ func main() {
 	fmt.Printf("Decoder: %s\n", display(summary.DecoderType))
 	fmt.Printf("Base vocab entries: %d\n", summary.VocabSize)
 	fmt.Printf("Added tokens: %d\n", summary.AddedTokens)
+	fmt.Printf("SHA256: %s\n", summary.SHA256)
+	if *expectedSHA256 != "" {
+		if err := tokenizerdemo.VerifySHA256(summary.SHA256, *expectedSHA256); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Fingerprint check: matched")
+	}
 	fmt.Println("Note: this summary describes the file; it does not prove which model produced it.")
 }
 

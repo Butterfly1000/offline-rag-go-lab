@@ -2,9 +2,11 @@ package tokenizerdemo
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // TokenizerSummary contains only the top-level structure needed for teaching
@@ -18,6 +20,7 @@ type TokenizerSummary struct {
 	DecoderType       string
 	VocabSize         int
 	AddedTokens       int
+	SHA256            string
 }
 
 type componentConfig struct {
@@ -66,7 +69,19 @@ func InspectFile(path string) (TokenizerSummary, error) {
 		DecoderType:       config.Decoder.Type,
 		VocabSize:         vocabSize,
 		AddedTokens:       len(config.AddedTokens),
+		SHA256:            fmt.Sprintf("%x", sha256.Sum256(data)),
 	}, nil
+}
+
+// VerifySHA256 compares a recorded fingerprint with the file fingerprint.
+// It proves byte-for-byte consistency, not compatibility with a model.
+func VerifySHA256(actual string, expected string) error {
+	actual = strings.TrimSpace(actual)
+	expected = strings.TrimSpace(expected)
+	if strings.EqualFold(actual, expected) {
+		return nil
+	}
+	return fmt.Errorf("tokenizer SHA256 mismatch: expected %s, actual %s", expected, actual)
 }
 
 // countJSONCollection supports object vocabularies used by BPE/WordPiece and

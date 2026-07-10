@@ -38,7 +38,12 @@ Post-processor: TemplateProcessing
 Decoder: ByteLevel
 Base vocab entries: 50000
 Added tokens: 23944
+SHA256: b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8
 ```
+
+SHA256 的实践和边界单独见：
+
+- [tokenizer-fingerprint-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-fingerprint-sop.md:1)
 
 ---
 

@@ -116,11 +116,14 @@
 
 1. tokenizer 启动时加载一次并重复编码
 2. 查看 `tokenizer.json` 的组件结构和词表规模
+3. 用 SHA256 固定 tokenizer 文件身份并支持启动前校验
 
 文档：
 
 - [tokenizer-load-once-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-load-once-sop.md:1)
 - [tokenizer-inspect-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-inspect-sop.md:1)
+- [tokenizer-fingerprint-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-fingerprint-sop.md:1)
+- [00-optimization-backlog.md](/offline-rag-go-lab/docs/teaching/00-optimization-backlog.md:1)
 
 ---
 
