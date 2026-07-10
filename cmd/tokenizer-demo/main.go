@@ -12,18 +12,21 @@ import (
 func main() {
 	defaultPath := filepath.Join("assets", "tokenizers", "qwen2", "tokenizer.json")
 	tokenizerPath := flag.String("tokenizer", defaultPath, "path to tokenizer.json")
+	text := flag.String("text", "我叫小黄，这个项目是 Go 写的。后面的例子，请继续用 Go 来说明。", "text to tokenize")
 	flag.Parse()
 
-	text := "我叫小黄，这个项目是 Go 写的。后面的例子，请继续用 Go 来说明。"
 	messages := []tokenizerdemo.Message{
 		{Role: "user", Content: "我叫小黄。"},
 		{Role: "assistant", Content: "这个项目是 Go 写的。"},
 		{Role: "user", Content: "后面的例子，请继续用 Go 来说明。"},
 	}
 
-	counter := tokenizerdemo.NewCounter(*tokenizerPath)
+	counter, err := tokenizerdemo.LoadCounter(*tokenizerPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	textCount, textTokens, textIDs, err := counter.CountText(text)
+	textCount, textTokens, textIDs, err := counter.CountText(*text)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +39,7 @@ func main() {
 	fmt.Printf("Tokenizer path: %s\n\n", *tokenizerPath)
 
 	fmt.Println("== Text Demo ==")
-	fmt.Printf("Text: %s\n", text)
+	fmt.Printf("Text: %s\n", *text)
 	fmt.Printf("Token count: %d\n", textCount)
 	fmt.Printf("First tokens: %v\n", clipStrings(textTokens, 20))
 	fmt.Printf("First token ids: %v\n\n", clipInts(textIDs, 20))

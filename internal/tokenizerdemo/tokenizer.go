@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sugarme/tokenizer"
 	"github.com/sugarme/tokenizer/pretrained"
 )
 
@@ -13,20 +14,28 @@ type Message struct {
 }
 
 type Counter struct {
-	path string
+	tokenizer *tokenizer.Tokenizer
 }
 
-func NewCounter(tokenizerPath string) Counter {
-	return Counter{path: tokenizerPath}
-}
-
-func (c Counter) CountText(text string) (count int, tokens []string, ids []int, err error) {
-	tk, err := pretrained.FromFile(c.path)
+func LoadCounter(tokenizerPath string) (*Counter, error) {
+	// FromFile reads tokenizer.json and constructs its normalizer, pre-tokenizer,
+	// model, post-processor, and decoder. This work is done once at startup.
+	tk, err := pretrained.FromFile(tokenizerPath)
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("load tokenizer from %q: %w", c.path, err)
+		return nil, fmt.Errorf("load tokenizer from %q: %w", tokenizerPath, err)
 	}
 
-	encoding, err := tk.EncodeSingle(text, false)
+	return newCounter(tk), nil
+}
+
+func newCounter(tk *tokenizer.Tokenizer) *Counter {
+	return &Counter{tokenizer: tk}
+}
+
+func (c *Counter) CountText(text string) (count int, tokens []string, ids []int, err error) {
+	// EncodeSingle executes the rules already loaded from tokenizer.json.
+	// false means this plain-text count does not add special tokens.
+	encoding, err := c.tokenizer.EncodeSingle(text, false)
 	if err != nil {
 		return 0, nil, nil, fmt.Errorf("encode text: %w", err)
 	}
@@ -34,7 +43,7 @@ func (c Counter) CountText(text string) (count int, tokens []string, ids []int, 
 	return encoding.Len(), encoding.Tokens, encoding.Ids, nil
 }
 
-func (c Counter) CountMessages(messages []Message) (perMessage []int, total int, transcriptCount int, err error) {
+func (c *Counter) CountMessages(messages []Message) (perMessage []int, total int, transcriptCount int, err error) {
 	var transcript strings.Builder
 	perMessage = make([]int, 0, len(messages))
 

@@ -29,11 +29,15 @@ func main() {
 	defer db.Close()
 
 	tokenizerPath := envOrDefault("RECENT_CHAT_TOKENIZER_PATH", filepath.Join("assets", "tokenizers", "qwen2", "tokenizer.json"))
+	tokenCounter, err := tokenizerdemo.LoadCounter(tokenizerPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	service := recentchat.NewServiceWithTokenWindow(
 		recentchat.NewMySQLMessageStore(db),
 		recentchat.CountWindowBuilder{},
-		recentchat.NewTokenBudgetWindowBuilder(tokenizerdemo.NewCounter(tokenizerPath)),
+		recentchat.NewTokenBudgetWindowBuilder(tokenCounter),
 		recentchat.NewHTTPOllamaClient(envOrDefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")),
 	)
 
