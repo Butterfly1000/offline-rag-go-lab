@@ -48,11 +48,11 @@
 
 **Produces:** `CompareTokens(counter TextTokenCounter, system string, prompt string, rendered string) (TokenComparison, error)`
 
-- [ ] 写测试：统计正文 token、渲染 token 和差值，计数错误向上传递
-- [ ] 运行目标测试并确认 RED
-- [ ] 增加 `--tokenizer` 和 token 对比输出
-- [ ] 运行命令、review、全量测试
-- [ ] 提交 `feat: compare prompt template token overhead`
+- [x] 写测试：统计正文 token、渲染 token 和差值，计数错误向上传递
+- [x] 运行目标测试并确认 RED
+- [x] 增加 `--tokenizer` 和 token 对比输出
+- [x] 运行命令、review、全量测试
+- [x] 提交 `feat: compare prompt template token overhead`
 
 ### Task 3: 上下文预算规划
 

@@ -119,6 +119,7 @@
 3. 用 SHA256 固定 tokenizer 文件身份并支持启动前校验
 4. 从 Ollama `/api/show` 读取模型上下文上限和 prompt template
 5. 用 Go `text/template` 渲染当前 Ollama 模型的 system/user prompt
+6. 对比正文 token、rendered prompt token 和 template overhead
 
 文档：
 
@@ -127,6 +128,7 @@
 - [tokenizer-fingerprint-sop.md](/offline-rag-go-lab/docs/teaching/tokenizer-fingerprint-sop.md:1)
 - [ollama-model-inspect-sop.md](/offline-rag-go-lab/docs/teaching/ollama-model-inspect-sop.md:1)
 - [prompt-template-render-sop.md](/offline-rag-go-lab/docs/teaching/prompt-template-render-sop.md:1)
+- [prompt-template-token-overhead-sop.md](/offline-rag-go-lab/docs/teaching/prompt-template-token-overhead-sop.md:1)
 - [00-optimization-backlog.md](/offline-rag-go-lab/docs/teaching/00-optimization-backlog.md:1)
 
 ---
