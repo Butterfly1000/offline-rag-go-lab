@@ -5,9 +5,11 @@ config/*.env
 assets/tokenizers/**/*.json
 
 # Go build outputs
+/.cache/
 /recent-chat
 /tokenizer-inspect
 /ollama-model-inspect
+/prompt-budget-demo
 *.exe
 *.test
 *.out
