@@ -108,3 +108,59 @@ go build ./cmd/...
 - 命令构建：`go build ./cmd/...` 通过
 - 实践：真实输出 `39` content-only、`88` rendered、`49` overhead
 - Review：无 Critical/Important 问题
+
+## 小节 07：上下文预算规划
+
+### 执行操作
+
+1. 新增预算规划测试和 `Plan`
+2. 扩展 `prompt-budget-demo`，增加 `--output-reserve`
+3. 运行正常预算和超预算两条真实命令
+4. 运行目标测试、全量测试、vet 和全部命令构建
+5. 提交前 review，并创建独立 commit
+
+### 状态影响
+
+- 仓库：新增预算代码、测试和 SOP
+- Ollama：仅读取 `/api/show`，没有生成或模型修改
+- tokenizer：只读项目内 JSON 资产
+- `/chat`：没有修改现有请求或裁剪行为
+- 数据库/Qdrant：没有访问
+- Git：只创建本地 commit，没有 push
+
+### 实际结果
+
+- model context limit：`32768`
+- fixed rendered prompt：`88` tokens
+- output reserve：`2048` tokens
+- available recent history：`30632` tokens
+- 超预算示例：`88 + 32700 = 32788`，命令以退出码 `1` 拒绝
+
+### 问题与影响分析
+
+代码写入后、编译前的数据流检查发现 `Plan` 被通用补丁插入到 `comparison` 创建之前。该未执行代码立即调整为：
+
+```text
+Show -> Render -> LoadCounter -> CompareTokens -> Plan
+```
+
+问题在运行和提交前发现，没有影响服务、数据或已提交历史。
+
+### Review 与验证证据
+
+- RED：`Plan` 和 `BudgetPlan` 不存在时目标测试编译失败
+- GREEN：`go test ./internal/promptbudget` 通过
+- 回归：`go test ./...` 通过
+- 并发检查：`go test -race ./internal/promptbudget` 通过
+- 静态检查：`go vet ./internal/promptbudget ./cmd/prompt-budget-demo` 通过
+- 命令构建：`go build ./cmd/...` 通过
+- 正常实践：输出 `30632` available recent history tokens
+- 失败实践：超预算时退出码为 `1`
+- Review：无 Critical/Important 问题
+
+## 批次影响总结
+
+- 新增能力全部位于教学库和教学命令
+- 现有 `/chat`、MySQL、Qdrant 和模型文件均未修改
+- 本批次没有执行 `git push`
+- 三节分别使用独立 commit，便于按节追溯

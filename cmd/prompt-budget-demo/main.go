@@ -17,6 +17,7 @@ func main() {
 	system := flag.String("system", "你是一个 Go 项目教学助手。", "system prompt")
 	prompt := flag.String("prompt", "解释 token 是如何计算的。", "user prompt")
 	tokenizerPath := flag.String("tokenizer", filepath.Join("assets", "tokenizers", "qwen2", "tokenizer.json"), "path to tokenizer.json")
+	outputReserve := flag.Int("output-reserve", 2048, "tokens reserved for the model response")
 	flag.Parse()
 
 	client := recentchat.NewHTTPOllamaClient(*baseURL)
@@ -36,6 +37,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	budgetPlan, err := promptbudget.Plan(modelSummary.ContextLength, comparison.RenderedTokens, *outputReserve)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Printf("Model: %s\n", modelSummary.Model)
 	fmt.Printf("Context length: %d\n", modelSummary.ContextLength)
@@ -47,4 +52,6 @@ func main() {
 	fmt.Printf("Content-only total: %d\n", comparison.ContentTokens)
 	fmt.Printf("Rendered prompt tokens: %d\n", comparison.RenderedTokens)
 	fmt.Printf("Template overhead tokens: %d\n", comparison.TemplateOverhead)
+	fmt.Printf("Output reserve tokens: %d\n", budgetPlan.OutputReserve)
+	fmt.Printf("Available recent history tokens: %d\n", budgetPlan.AvailableHistoryTokens)
 }

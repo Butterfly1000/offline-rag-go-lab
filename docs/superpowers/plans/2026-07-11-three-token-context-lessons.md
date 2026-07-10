@@ -68,8 +68,8 @@
 
 **Produces:** `Plan(contextLimit int, fixedInputTokens int, outputReserve int) (BudgetPlan, error)`
 
-- [ ] 写测试：正确计算 history budget，输入加输出超限时报错
-- [ ] 运行目标测试并确认 RED
-- [ ] 增加 `--output-reserve` 和预算输出
-- [ ] 运行命令、review、全量测试
-- [ ] 提交 `feat: plan context token budget`
+- [x] 写测试：正确计算 history budget，输入加输出超限时报错
+- [x] 运行目标测试并确认 RED
+- [x] 增加 `--output-reserve` 和预算输出
+- [x] 运行命令、review、全量测试
+- [x] 提交 `feat: plan context token budget`
