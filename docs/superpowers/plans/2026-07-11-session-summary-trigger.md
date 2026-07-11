@@ -39,7 +39,7 @@
 - Produces: `NewTriggerPolicy(minMessages int, minTokens int) (TriggerPolicy, error)`
 - Produces: `TriggerPolicy.Decide(input TriggerInput) (TriggerDecision, error)`
 
-- [ ] **Step 1: Write the failing trigger tests**
+- [x] **Step 1: Write the failing trigger tests**
 
 ```go
 func TestTriggerPolicyRequiresEvictedMessages(t *testing.T) {
@@ -75,7 +75,7 @@ func TestTriggerPolicyTriggersAtTokenThreshold(t *testing.T) {
 
 Also test both thresholds, below threshold, non-positive policy values, negative input, and `EvictedMessages > UnsummarizedMessages`.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run:
 
@@ -85,7 +85,7 @@ env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/sessionsummary
 
 Expected: compile failure because `TriggerPolicy`, `TriggerInput`, and reason constants do not exist.
 
-- [ ] **Step 3: Implement types and minimal policy**
+- [x] **Step 3: Implement types and minimal policy**
 
 ```go
 type SessionSummary struct {
@@ -124,7 +124,7 @@ validate
 -> below threshold
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run:
 
@@ -134,7 +134,7 @@ env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/sessionsummary
 
 Expected: all trigger tests pass.
 
-- [ ] **Step 5: Add SQL and practical command**
+- [x] **Step 5: Add SQL and practical command**
 
 The SQL table must contain:
 
@@ -165,7 +165,7 @@ go run ./cmd/summary-trigger-demo --messages 3 --tokens 1000 --evicted 1
 
 Expected reasons: `no_evicted_messages`, `message_threshold`, `token_threshold`, `below_threshold`.
 
-- [ ] **Step 6: Write SOP and update progress**
+- [x] **Step 6: Write SOP and update progress**
 
 The SOP explains:
 
@@ -177,7 +177,7 @@ The SOP explains:
 
 Update learning status to mark only “summary structure and trigger” complete. Add non-blocking optimizations to the backlog.
 
-- [ ] **Step 7: Review, verify, and commit**
+- [x] **Step 7: Review, verify, and commit**
 
 Run:
 

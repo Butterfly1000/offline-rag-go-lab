@@ -147,6 +147,17 @@ token 主线当前状态：
 
 **已形成“模型容量 -> 完整计数 -> 自动预算 -> 历史裁剪 -> 生成上限 -> API 可观测”的真实闭环。**
 
+Session Summary 当前已完成第 13 节：
+
+1. 定义 summary record 和 `last_message_id` 水位
+2. 提供 `session_summaries` MySQL 建表 SQL
+3. 实现“驱逐前置 + message/token 双阈值”触发策略
+4. 用命令和测试验证触发原因及非法输入
+
+文档：
+
+- [session-summary-trigger-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-trigger-sop.md:1)
+
 ---
 
 ## 4. 下一章是什么
@@ -163,8 +174,8 @@ token 主线当前状态：
 
 这一章推荐拆成下面几段：
 
-1. 设计 session summary 数据结构和触发条件
-2. 用 Ollama 真实生成增量摘要
+1. 设计 session summary 数据结构和触发条件（已完成）
+2. 选择水位之后且已被驱逐的消息，用 Ollama 真实生成增量摘要
 3. 把摘要存入 MySQL memory/session summary store
 4. 下一轮组合 summary + recent window + current user
 5. 再区分 session summary 和 long-term memory
@@ -230,4 +241,4 @@ token 主线当前状态：
 6. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
 7. [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 
-然后从 `recent-window-layer-02c-session-summary.md` 的落地设计开始，而不是重新讲 token 或项目介绍。
+然后从 [session-summary-trigger-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-trigger-sop.md:1) 复核当前接口，再开始“增量摘要输入选择与 Ollama 生成”，不要重新讲 token 或 summary 概念。
