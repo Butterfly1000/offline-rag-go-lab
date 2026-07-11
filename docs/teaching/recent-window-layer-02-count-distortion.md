@@ -119,11 +119,11 @@ func (b CountWindowBuilder) Build(messages []Message, maxMessages int) []Message
 
 当前业务链路在：
 
-- [service.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/service.go:14)
+- [service.go](/offline-rag-go-lab/internal/recentchat/service.go:14)
 
 关键步骤是：
 
-1. `ListRecentBySession(session_id, recent_limit)` 从 MySQL 取最近消息
+1. `ListRecentBySessionUser(session_id, user_id, recent_limit)` 从 MySQL 取当前用户的最近消息
 2. `CountWindowBuilder.Build(...)` 再按 `recent_limit` 取最后 N 条
 3. 选中的窗口和本轮用户消息一起发给 Ollama
 

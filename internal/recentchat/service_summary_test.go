@@ -60,7 +60,7 @@ func TestServiceUsesUpdatedSummaryWithConservativeRecentWindow(t *testing.T) {
 		{ID: 2, Role: RoleAssistant, Content: "m2"},
 		{ID: 3, Role: RoleUser, Content: "m3"},
 	}
-	store := &fakeMessageStore{listRecentBySessionFn: func(_ string, _ int) ([]Message, error) {
+	store := &fakeMessageStore{listRecentBySessionUserFn: func(_, _ string, _ int) ([]Message, error) {
 		events = append(events, "recent_list")
 		return messages, nil
 	}}

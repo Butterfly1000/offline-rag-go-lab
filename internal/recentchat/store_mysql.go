@@ -5,6 +5,12 @@ import (
 	"database/sql"
 )
 
+const listRecentBySessionUserQuery = `SELECT id, session_id, user_id, role, content, created_at
+		FROM recent_chat_messages
+		WHERE session_id = ? AND user_id = ?
+		ORDER BY created_at DESC, id DESC
+		LIMIT ?`
+
 type MySQLMessageStore struct {
 	db *sql.DB
 }
@@ -13,15 +19,12 @@ func NewMySQLMessageStore(db *sql.DB) *MySQLMessageStore {
 	return &MySQLMessageStore{db: db}
 }
 
-func (s *MySQLMessageStore) ListRecentBySession(sessionID string, limit int) ([]Message, error) {
+func (s *MySQLMessageStore) ListRecentBySessionUser(sessionID, userID string, limit int) ([]Message, error) {
 	rows, err := s.db.QueryContext(
 		context.Background(),
-		`SELECT id, session_id, user_id, role, content, created_at
-		FROM recent_chat_messages
-		WHERE session_id = ?
-		ORDER BY created_at DESC, id DESC
-		LIMIT ?`,
+		listRecentBySessionUserQuery,
 		sessionID,
+		userID,
 		limit,
 	)
 	if err != nil {

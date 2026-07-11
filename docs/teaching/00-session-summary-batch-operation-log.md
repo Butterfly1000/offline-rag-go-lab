@@ -168,3 +168,35 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现未处理的 Critical 或 Important 问题
+
+## Push 前隔离 Review 修复
+
+### 发现
+
+- push 前完整 diff Review 发现 recent store 只按 `session_id` 查询
+- summary source/store 已按 `(session_id,user_id)` 查询，两个边界不一致
+- 不同用户复用相同 session 时，可能混入他人 recent history，或让 summary recent 起点无法在本用户消息中找到
+
+### RED/GREEN
+
+- 新增 user-scoped fake store，测试先因旧 `MessageStore` 缺少双键方法而编译 RED
+- 接口改为 `ListRecentBySessionUser(sessionID,userID,limit)` 后 GREEN
+- MySQL 查询固定为 `WHERE session_id = ? AND user_id = ?`
+- 增加 SQL 结构测试，防止以后只传 user 但误删数据库过滤条件
+
+### 状态影响
+
+- 只修改代码、测试和教学文档
+- 未连接或修改 MySQL/Ollama/Qdrant，未执行 schema
+
+### 验证与 Review
+
+- `go test ./internal/recentchat` 通过
+- `go test ./...` 通过
+- `go test -race ./internal/recentchat ./internal/sessionsummary ./internal/fileconfig` 通过
+- race 首次仅因沙箱禁止 `httptest` 监听回环端口失败，授权后同命令通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 搜索确认生产 Go 代码和教学文档不再调用旧 `ListRecentBySession`
+- 最终 Review：未发现其他 Critical 或 Important 问题

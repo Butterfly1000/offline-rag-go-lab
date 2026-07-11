@@ -82,7 +82,7 @@ HTTP 入口在：
 这轮会依次发生：
 
 1. `req.Validate()` 校验输入
-2. `s.store.ListRecentBySession(req.SessionID, req.RecentLimit)` 去 MySQL 查最近消息
+2. `s.store.ListRecentBySessionUser(req.SessionID, req.UserID, req.RecentLimit)` 按 session/user 去 MySQL 查最近消息
 3. `s.window.Build(recent, req.RecentLimit)` 截 recent window
 4. 组装 `ollamaMessages`
 5. `s.ollama.Chat(...)` 调 Ollama
@@ -107,6 +107,7 @@ USE offline_rag;
 SELECT id, session_id, user_id, role, content, created_at
 FROM recent_chat_messages
 WHERE session_id = 's-001'
+  AND user_id = 'u-001'
 ORDER BY id ASC;
 ```
 

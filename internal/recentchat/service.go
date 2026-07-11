@@ -103,7 +103,7 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		fetchLimit = defaultTokenBudgetFetchLimit
 	}
 
-	recent, err := s.store.ListRecentBySession(req.SessionID, fetchLimit)
+	recent, err := s.store.ListRecentBySessionUser(req.SessionID, req.UserID, fetchLimit)
 	if err != nil {
 		return ChatResponse{}, err
 	}

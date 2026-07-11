@@ -21,6 +21,8 @@
 
 不传 `use_session_summary` 时，原有 count/manual/automatic 路径不要求 summary 依赖，旧行为保持不变。
 
+recent window 和 session summary 都使用 `(session_id,user_id)` 隔离。即使两个用户传入相同 `session_id`，也只能读取各自的消息与摘要；不能只按 session 查询 recent、再按 session/user 查询 summary。
+
 ## 2. 为什么需要固定 Summary Reserve
 
 如果先生成 summary，再按剩余容量选 recent，会出现循环：

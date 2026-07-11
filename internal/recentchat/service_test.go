@@ -57,14 +57,42 @@ var fixedNow = func() time.Time {
 	return time.Date(2026, time.June, 29, 10, 30, 0, 0, time.UTC)
 }
 
+type userScopedMessageStore struct {
+	sessionID string
+	userID    string
+}
+
+func (s *userScopedMessageStore) ListRecentBySessionUser(sessionID, userID string, _ int) ([]Message, error) {
+	s.sessionID = sessionID
+	s.userID = userID
+	return nil, nil
+}
+
+func (*userScopedMessageStore) Append(Message) error { return nil }
+
+func TestServiceScopesRecentHistoryBySessionAndUser(t *testing.T) {
+	store := &userScopedMessageStore{}
+	service := Service{store: store, window: CountWindowBuilder{}, ollama: &fakeOllamaClient{}, nowFunc: fixedNow}
+
+	_, err := service.Chat(ChatRequest{SessionID: "shared-session", UserID: "u-002", Message: "hello", Model: "qwen:7b"})
+	if err != nil {
+		t.Fatalf("Chat() error = %v", err)
+	}
+	if store.sessionID != "shared-session" || store.userID != "u-002" {
+		t.Fatalf("recent lookup = session %q user %q", store.sessionID, store.userID)
+	}
+}
+
 func TestServiceChatsWithRecentWindowAndPersistsTurns(t *testing.T) {
 	var gotSessionID string
+	var gotUserID string
 	var gotLimit int
 	var appended []Message
 
 	store := &fakeMessageStore{
-		listRecentBySessionFn: func(sessionID string, limit int) ([]Message, error) {
+		listRecentBySessionUserFn: func(sessionID, userID string, limit int) ([]Message, error) {
 			gotSessionID = sessionID
+			gotUserID = userID
 			gotLimit = limit
 			return []Message{
 				{SessionID: sessionID, UserID: "u1", Role: RoleUser, Content: "old q"},
@@ -120,8 +148,8 @@ func TestServiceChatsWithRecentWindowAndPersistsTurns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
-	if gotSessionID != "s1" || gotLimit != 2 {
-		t.Fatalf("unexpected recent lookup: session=%q limit=%d", gotSessionID, gotLimit)
+	if gotSessionID != "s1" || gotUserID != "u1" || gotLimit != 2 {
+		t.Fatalf("unexpected recent lookup: session=%q user=%q limit=%d", gotSessionID, gotUserID, gotLimit)
 	}
 	if resp.Answer != "new answer" {
 		t.Fatalf("unexpected answer: %s", resp.Answer)
@@ -157,7 +185,7 @@ func TestServiceChatsWithRecentWindowAndPersistsTurns(t *testing.T) {
 
 func TestServiceUsesTokenBudgetWindowWhenProvided(t *testing.T) {
 	store := &fakeMessageStore{
-		listRecentBySessionFn: func(sessionID string, limit int) ([]Message, error) {
+		listRecentBySessionUserFn: func(sessionID, _ string, limit int) ([]Message, error) {
 			return []Message{
 				{SessionID: sessionID, UserID: "u1", Role: RoleUser, Content: "old q"},
 				{SessionID: sessionID, UserID: "u1", Role: RoleAssistant, Content: "old a"},
@@ -217,7 +245,7 @@ func TestServiceUsesTokenBudgetWindowWhenProvided(t *testing.T) {
 func TestServiceUsesAutomaticBudgetAndReturnsBreakdown(t *testing.T) {
 	var gotLimit int
 	store := &fakeMessageStore{
-		listRecentBySessionFn: func(_ string, limit int) ([]Message, error) {
+		listRecentBySessionUserFn: func(_, _ string, limit int) ([]Message, error) {
 			gotLimit = limit
 			return []Message{
 				{Role: RoleUser, Content: "old q"},
@@ -359,15 +387,15 @@ func TestServiceRequiresStrictWindowForAutomaticBudget(t *testing.T) {
 }
 
 type fakeMessageStore struct {
-	listRecentBySessionFn func(sessionID string, limit int) ([]Message, error)
-	appendFn              func(msg Message) error
+	listRecentBySessionUserFn func(sessionID, userID string, limit int) ([]Message, error)
+	appendFn                  func(msg Message) error
 }
 
-func (f *fakeMessageStore) ListRecentBySession(sessionID string, limit int) ([]Message, error) {
-	if f.listRecentBySessionFn == nil {
+func (f *fakeMessageStore) ListRecentBySessionUser(sessionID, userID string, limit int) ([]Message, error) {
+	if f.listRecentBySessionUserFn == nil {
 		return nil, nil
 	}
-	return f.listRecentBySessionFn(sessionID, limit)
+	return f.listRecentBySessionUserFn(sessionID, userID, limit)
 }
 
 func (f *fakeMessageStore) Append(msg Message) error {
