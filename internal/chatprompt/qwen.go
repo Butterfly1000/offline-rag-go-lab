@@ -38,6 +38,23 @@ func (QwenFormatter) AssistantPrefix() string {
 	return qwenMessageStart + "assistant\n"
 }
 
+// Render preserves message order and optionally appends the unfinished
+// assistant prefix that tells the model where generated content begins.
+func (f QwenFormatter) Render(messages []Message, includeAssistantPrefix bool) (string, error) {
+	var rendered strings.Builder
+	for i, message := range messages {
+		formatted, err := f.FormatMessage(message)
+		if err != nil {
+			return "", fmt.Errorf("format message %d: %w", i, err)
+		}
+		rendered.WriteString(formatted)
+	}
+	if includeAssistantPrefix {
+		rendered.WriteString(f.AssistantPrefix())
+	}
+	return rendered.String(), nil
+}
+
 func isSupportedRole(role string) bool {
 	switch role {
 	case "system", "user", "assistant", "tool":

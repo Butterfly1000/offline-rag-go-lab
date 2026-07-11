@@ -49,3 +49,33 @@ func TestQwenFormatterReturnsAssistantPrefix(t *testing.T) {
 		t.Fatalf("AssistantPrefix() = %q, want %q", got, want)
 	}
 }
+
+func TestQwenFormatterRendersConversationAndAssistantPrefix(t *testing.T) {
+	messages := []Message{
+		{Role: "system", Content: "规则"},
+		{Role: "user", Content: "旧问题"},
+		{Role: "assistant", Content: "旧回答"},
+		{Role: "user", Content: "新问题"},
+	}
+
+	got, err := (QwenFormatter{}).Render(messages, true)
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	want := "<|im_start|>system\n规则<|im_end|>\n" +
+		"<|im_start|>user\n旧问题<|im_end|>\n" +
+		"<|im_start|>assistant\n旧回答<|im_end|>\n" +
+		"<|im_start|>user\n新问题<|im_end|>\n" +
+		"<|im_start|>assistant\n"
+	if got != want {
+		t.Fatalf("Render() = %q, want %q", got, want)
+	}
+}
+
+func TestQwenFormatterRenderRejectsInvalidMessage(t *testing.T) {
+	_, err := (QwenFormatter{}).Render([]Message{{Role: "unknown", Content: "x"}}, true)
+	if err == nil || !strings.Contains(err.Error(), "message 0") {
+		t.Fatalf("Render() error = %v, want indexed message error", err)
+	}
+}

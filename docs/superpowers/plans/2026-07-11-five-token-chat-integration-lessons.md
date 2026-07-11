@@ -100,7 +100,7 @@ Commit: `feat: format Qwen chat messages`
 - Produces: `NewTokenCounter(TextTokenCounter, QwenFormatter) TokenCounter`
 - Produces: `TokenCounter.Count([]Message, bool) (TokenUsage, error)`
 
-- [ ] **Step 1: Write failing render and count tests**
+- [x] **Step 1: Write failing render and count tests**
 
 ```go
 func TestQwenFormatterRendersConversationAndAssistantPrefix(t *testing.T) {
@@ -116,13 +116,13 @@ func TestTokenCounterCountsRenderedConversationOnce(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/chatprompt`
 
 Expected: compile failure because `Render`, `TokenCounter`, and `TokenUsage` do not exist.
 
-- [ ] **Step 3: Implement full rendering and counting**
+- [x] **Step 3: Implement full rendering and counting**
 
 ```go
 type TextTokenCounter interface {
@@ -141,13 +141,13 @@ func (c TokenCounter) Count(messages []Message, includeAssistantPrefix bool) (To
 
 Count the complete rendered string once; wrap formatter/tokenizer errors with operation context.
 
-- [ ] **Step 4: Add the tokenizer-backed command and SOP**
+- [x] **Step 4: Add the tokenizer-backed command and SOP**
 
 Run: `go run ./cmd/conversation-token-demo --system '你是 Go 助手。' --history-user '我叫小黄。' --history-assistant '记住了。' --prompt '我叫什么？'`
 
 Expected output includes rendered conversation and total prompt tokens.
 
-- [ ] **Step 5: Review, verify, and commit**
+- [x] **Step 5: Review, verify, and commit**
 
 Run target/full tests, race test for `internal/chatprompt`, vet, all command builds, real demo, and `git diff --check`.
 

@@ -67,3 +67,48 @@ go test ./internal/chatprompt
 - 非法实践：`unknown` role 以退出码 `1` 拒绝
 - 敏感信息扫描：本节文件未出现完整本机路径、DSN、密码、secret 或 API key
 - Review：未发现 Critical 或 Important 问题
+
+## 第 09 节：完整对话 prompt 计数
+
+### 执行操作
+
+1. 新增完整对话渲染和一次性计数测试
+2. 确认测试因 `Render`、`TokenCounter` 和 `TokenUsage` 缺失而失败
+3. 实现对话组合和完整 tokenizer 计数
+4. 新增 `conversation-token-demo` 和教学 SOP
+5. 运行真实 tokenizer 命令、回归检查和提交前 review
+
+### 状态影响
+
+- 仓库：扩展 `chatprompt`，新增计数代码、测试、命令和文档
+- tokenizer：只读本地 `tokenizer.json`
+- Ollama/MySQL/Qdrant：没有访问
+- 现有 `/chat`：没有修改
+- Git：只创建本地 commit，不 push
+
+### 风险分析
+
+- tokenizer 对完整 conversation 只调用一次，避免正文分段相加造成的漏算
+- formatter 错误会带消息下标，tokenizer 错误会保留操作上下文
+- 示例 token 数取决于本地资产，文档不把本机数字描述成通用常量
+
+### RED 证据
+
+执行：
+
+```bash
+go test ./internal/chatprompt
+```
+
+失败原因：`Render`、`NewTokenCounter` 和相关类型尚不存在，符合测试先行预期。
+
+### GREEN 与 review 证据
+
+- 目标测试：`go test ./internal/chatprompt` 通过
+- 回归测试：`go test ./...` 通过
+- 并发检查：`go test -race ./internal/chatprompt` 通过
+- 静态检查：`go vet ./internal/chatprompt ./cmd/conversation-token-demo` 通过
+- 命令构建：`go build ./cmd/...` 通过
+- 完整实践：4 条消息的 rendered conversation 为 `122` tokens
+- 对照实践：去掉两条历史后，2 条消息为 `62` tokens
+- Review：未发现 Critical 或 Important 问题
