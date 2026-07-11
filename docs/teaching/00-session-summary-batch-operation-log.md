@@ -36,3 +36,28 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现其他 Critical 或 Important 问题
+
+## 第 15 节：真实 Ollama 增量摘要生成
+
+### RED/GREEN
+
+- prompt/generator 测试因 API 缺失而 RED，最小实现后 GREEN
+- Ollama adapter 测试因 `GenerateText` 缺失而 RED，接入 `/api/chat` 后 GREEN
+
+### 状态影响
+
+- 新增 prompt、generator、测试、真实命令和 SOP
+- 实践只调用本机 Ollama，不访问 MySQL/Qdrant，不修改 `/chat`
+
+### 验证与 Review
+
+- 真实 qwen 输出覆盖旧摘要和 IDs `21..23` 的关键事实
+- Review 发现模型添加 `<updated_summary>` wrapper
+- 修复证据：新增测试先失败，再实现 wrapper 清理并强化 prompt
+- 模型仍可能输出自然语言引导语；不使用脆弱关键词删除，记录为结构化输出优化
+- `go test ./...` 通过
+- `go test -race ./internal/sessionsummary ./internal/recentchat` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现其他 Critical 或 Important 问题

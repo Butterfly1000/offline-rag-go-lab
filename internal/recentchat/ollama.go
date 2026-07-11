@@ -113,6 +113,22 @@ func (c *HTTPOllamaClient) Chat(req OllamaChatRequest) (OllamaChatResponse, erro
 	return out, nil
 }
 
+func (c *HTTPOllamaClient) GenerateText(model, system, prompt string, maxTokens int) (string, error) {
+	response, err := c.Chat(OllamaChatRequest{
+		Model: model,
+		Messages: []OllamaMessage{
+			{Role: RoleSystem, Content: system},
+			{Role: RoleUser, Content: prompt},
+		},
+		Stream:  false,
+		Options: &OllamaChatOptions{NumPredict: maxTokens},
+	})
+	if err != nil {
+		return "", err
+	}
+	return response.Content, nil
+}
+
 // Show reads model metadata used when constructing a real Ollama request.
 // It returns only the fields needed for context-budget and template teaching.
 func (c *HTTPOllamaClient) Show(model string) (OllamaModelSummary, error) {

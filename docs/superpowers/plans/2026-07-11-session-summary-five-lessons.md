@@ -71,11 +71,11 @@ type Generator struct { /* TextGenerator */ }
 func (g Generator) Update(model, previous string, messages []SourceMessage, maxTokens int) (string, error)
 ```
 
-- [ ] Write tests for prompt sections/order/escaping, empty inputs, model/output validation, error propagation, trimming, and empty model output.
-- [ ] Confirm RED, implement prompt builder and generator.
-- [ ] Add `HTTPOllamaClient.GenerateText` using `/api/chat` with system/user messages and `num_predict`.
-- [ ] Run real `qwen:7b` command with old summary and evicted messages; capture result in SOP.
-- [ ] Review/full gates, commit `feat: generate incremental session summary`.
+- [x] Write tests for prompt sections/order/escaping, empty inputs, model/output validation, error propagation, trimming, and empty model output.
+- [x] Confirm RED, implement prompt builder and generator.
+- [x] Add `HTTPOllamaClient.GenerateText` using `/api/chat` with system/user messages and `num_predict`.
+- [x] Run real `qwen:7b` command with old summary and evicted messages; capture result in SOP.
+- [x] Review/full gates, commit `feat: generate incremental session summary`.
 
 ### Task 16: MySQL Summary Store 与 Version 更新
 
