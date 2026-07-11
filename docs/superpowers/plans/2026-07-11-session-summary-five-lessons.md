@@ -97,11 +97,11 @@ type SummaryStore interface {
 }
 ```
 
-- [ ] Write RED tests for missing/existing Get, first insert, versioned update, zero affected conflict, content/watermark validation and errors.
-- [ ] Implement store over a testable `SummaryQueries` boundary and concrete MySQL queries.
-- [ ] Add real command reading config and performing Get/Save on a dedicated test session.
-- [ ] Stop and request permission before executing `sql/session_summaries.sql` or the real command.
-- [ ] After approval, run schema + real store practice, document rows/version; review/full gates, commit `feat: persist versioned session summaries`.
+- [x] Write RED tests for missing/existing Get, first insert, versioned update, zero affected conflict, content/watermark validation and errors.
+- [x] Implement store over a testable `SummaryQueries` boundary and concrete MySQL queries.
+- [x] Add real command reading config and performing Get/Save on a dedicated test session.
+- [x] Stop and request permission before executing `sql/session_summaries.sql` or the real command.
+- [x] After approval, run schema + real store practice, document rows/version; review/full gates, commit `feat: persist versioned session summaries`.
 
 ### Task 17: 滚动摘要更新服务
 

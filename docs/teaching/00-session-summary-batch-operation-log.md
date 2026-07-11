@@ -61,3 +61,35 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现其他 Critical 或 Important 问题
+
+## 第 16 节：MySQL Summary Store 与 Version 更新
+
+### RED/GREEN
+
+- store/MySQL adapter 测试因 `NewStore`、`RowScanner` 和查询实现缺失而 RED，最小实现后 GREEN
+- 配置读取测试因 `readConfigValue` 缺失而 RED，实现从本地配置文件读取 DSN 后 GREEN
+
+### 状态影响
+
+- 新增业务 store、MySQL adapter、测试、真实命令和 SOP
+- 单元测试使用 fake，不依赖真实 MySQL；获批后另行完成了真实 schema 与读写验证
+- demo 读取被忽略的 `config/recent-chat.env`，不把 DSN 放入环境变量、命令行或 Git
+
+### 真实实践
+
+- 获得明确授权后，demo 读取本地配置并幂等执行 `sql/session_summaries.sql`
+- 第一次：记录不存在，`expected=0`，保存 `version=1, watermark=20`
+- 第二次：记录存在，`expected=1`，保存 `version=2, watermark=24`
+- 仅写入专用 `summary-store-demo/summary-store-user`，未修改现有聊天 session
+
+### 验证与 Review
+
+- Review 确认业务层预检查后，SQL 仍重复执行 version/watermark 原子保护
+- Review 确认重复插入、并发零影响行、watermark 回退和数据库错误都有测试
+- 辅助审查因工作区额度耗尽未返回结论；主流程按相同清单完成逐项 Review
+- `go test ./...` 通过
+- `go test -race ./internal/sessionsummary ./cmd/summary-store-demo` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现 Critical 或 Important 问题
