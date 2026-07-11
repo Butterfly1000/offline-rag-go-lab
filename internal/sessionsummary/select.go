@@ -42,15 +42,21 @@ func SelectPrefix(
 
 	evictedCount := len(unsummarized)
 	if recentStartID > 0 {
-		evictedCount = -1
-		for i, message := range unsummarized {
-			if message.ID == recentStartID {
-				evictedCount = i
-				break
+		if recentStartID <= lastMessageID {
+			// The recent window reaches into already summarized history, so every
+			// message after the watermark is still recent and none is evicted.
+			evictedCount = 0
+		} else {
+			evictedCount = -1
+			for i, message := range unsummarized {
+				if message.ID == recentStartID {
+					evictedCount = i
+					break
+				}
 			}
-		}
-		if evictedCount < 0 {
-			return PrefixSelection{}, fmt.Errorf("recent start ID %d not found after watermark %d", recentStartID, lastMessageID)
+			if evictedCount < 0 {
+				return PrefixSelection{}, fmt.Errorf("recent start ID %d not found after watermark %d", recentStartID, lastMessageID)
+			}
 		}
 	}
 

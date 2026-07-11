@@ -124,10 +124,10 @@ type UpdateResult struct { Updated bool; Decision TriggerDecision; Summary Sessi
 func (s UpdateService) Update(req UpdateRequest) (UpdateResult, error)
 ```
 
-- [ ] RED tests for no trigger, first summary, rolling summary, generator failure, save failure/conflict, and watermark preservation.
-- [ ] Implement MySQL message source and updater orchestration.
-- [ ] Run real command against dedicated session using MySQL, tokenizer and Ollama; verify version/watermark.
-- [ ] Write SOP, review/full gates, commit `feat: orchestrate rolling session summaries`.
+- [x] RED tests for no trigger, first summary, rolling summary, generator failure, save failure/conflict, and watermark preservation.
+- [x] Implement MySQL message source and updater orchestration.
+- [x] Run real command against dedicated session using MySQL, tokenizer and Ollama; verify version/watermark.
+- [x] Write SOP, review/full gates, commit `feat: orchestrate rolling session summaries`.
 
 ### Task 18: Summary 接入自动预算 `/chat`
 

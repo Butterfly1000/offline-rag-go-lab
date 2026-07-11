@@ -1,17 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"offline-rag-go-lab/internal/fileconfig"
 	"offline-rag-go-lab/internal/sessionsummary"
 )
 
@@ -27,7 +26,11 @@ func main() {
 
 	// Read the DSN from an ignored local file so credentials do not depend on
 	// process environment variables or appear in shell history.
-	dsn, err := readConfigValue(*configPath, "RECENT_CHAT_MYSQL_DSN")
+	values, err := fileconfig.Load(*configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dsn, err := fileconfig.Required(values, "RECENT_CHAT_MYSQL_DSN")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,32 +92,4 @@ func executeSchema(ctx context.Context, db schemaExecutor, path string) error {
 		return fmt.Errorf("execute schema %s: %w", path, err)
 	}
 	return nil
-}
-
-func readConfigValue(path, wantedKey string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", fmt.Errorf("open config %s: %w", path, err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		key, value, ok := strings.Cut(line, "=")
-		if ok && strings.TrimSpace(key) == wantedKey {
-			value = strings.TrimSpace(value)
-			if value == "" {
-				return "", fmt.Errorf("config key %s is empty", wantedKey)
-			}
-			return value, nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("scan config %s: %w", path, err)
-	}
-	return "", fmt.Errorf("config key %s is missing from %s", wantedKey, path)
 }

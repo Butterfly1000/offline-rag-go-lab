@@ -93,3 +93,38 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现 Critical 或 Important 问题
+
+## 第 17 节：滚动摘要更新服务
+
+### RED/GREEN
+
+- updater 测试因 `UpdateService` 和相关接口缺失而 RED，编排最小实现后 GREEN
+- MySQL source 测试因 `MessageRows/newMySQLMessageSource` 缺失而 RED，实现升序水位查询后 GREEN
+- file config 测试因 `Load/Required` 缺失而 RED，共享配置读取实现后 GREEN
+- command recent 起点测试因 `chooseRecentStartID` 缺失而 RED，实现后 GREEN
+
+### 状态影响
+
+- 新增 updater、MySQL message source、共享 file config、真实命令和 SOP
+- 修复 recent 起点早于 watermark 时 selector 误报不存在的问题
+- 重构 `summary-store-demo` 使用共享配置读取，行为不变
+
+### 真实实践
+
+- 获得明确授权后，向专用 `summary-update-demo/summary-update-user` 写入 6 条消息
+- 实际 IDs `7..12`，evicted `7..10`，recent `11..12`
+- qwen 真实生成摘要，保存 `version=1, watermark=10`
+- 第二次不 seed：`no_evicted_messages`、`updated=false`，version/watermark 保持 `1/10`
+- 模型引导语继续归入已存在的结构化输出优化项，不添加脆弱删除规则
+
+### 验证与 Review
+
+- Review 确认模型失败不调用 Save，version conflict 保持可识别错误链
+- Review 确认消息查询同时过滤 session/user 并按 watermark 的 ID 单位升序
+- Review 确认配置未进入环境变量，真实 DSN 和本机绝对路径未进入 diff
+- `go test ./...` 通过
+- `go test -race ./internal/sessionsummary ./internal/fileconfig ./cmd/summary-update-demo ./cmd/summary-store-demo` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现 Critical 或 Important 问题

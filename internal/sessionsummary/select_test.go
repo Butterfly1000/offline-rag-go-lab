@@ -69,6 +69,22 @@ func TestSelectPrefixDoesNotAdvanceWithoutEviction(t *testing.T) {
 	}
 }
 
+func TestSelectPrefixTreatsRecentStartBeforeWatermarkAsNoEviction(t *testing.T) {
+	got, err := SelectPrefix(
+		sourceMessages(21, 22),
+		20,
+		19,
+		fakeMessageTokenCounter{counts: map[int64]int{21: 2, 22: 3}},
+	)
+	if err != nil {
+		t.Fatalf("SelectPrefix() error = %v", err)
+	}
+	assertMessageIDs(t, got.Unsummarized, 21, 22)
+	if len(got.Evicted) != 0 || got.NextWatermark != 20 {
+		t.Fatalf("SelectPrefix() = %+v, want all new messages kept in recent window", got)
+	}
+}
+
 func TestSelectPrefixAllowsMessageIDGaps(t *testing.T) {
 	got, err := SelectPrefix(
 		sourceMessages(21, 23, 30),
