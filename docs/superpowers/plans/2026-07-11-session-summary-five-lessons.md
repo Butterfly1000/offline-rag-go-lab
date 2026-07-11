@@ -43,11 +43,11 @@ type PrefixSelection struct {
 func SelectPrefix(messages []SourceMessage, lastMessageID, recentStartID int64, counter MessageTokenCounter) (PrefixSelection, error)
 ```
 
-- [ ] Write tests for old-message filtering, recent boundary exclusion, empty recent window, ID gaps, no eviction, unordered/duplicate/invalid IDs, missing recent start, and counter errors.
-- [ ] Run `go test ./internal/sessionsummary -run 'TestSelectPrefix'` and confirm RED.
-- [ ] Implement minimal selector and Qwen formatted message counter adapter.
-- [ ] Run GREEN tests and a command showing watermark `20`, IDs `21..26`, recent start `25`, evicted `21..24`, next watermark `24`.
-- [ ] Write SOP, review, run full gates, commit `feat: select summary message prefix`.
+- [x] Write tests for old-message filtering, recent boundary exclusion, empty recent window, ID gaps, no eviction, unordered/duplicate/invalid IDs, missing recent start, and counter errors.
+- [x] Run `go test ./internal/sessionsummary -run 'TestSelectPrefix'` and confirm RED.
+- [x] Implement minimal selector and Qwen formatted message counter adapter.
+- [x] Run GREEN tests and a command showing watermark `20`, IDs `21..26`, recent start `25`, evicted `21..24`, next watermark `24`.
+- [x] Write SOP, review, run full gates, commit `feat: select summary message prefix`.
 
 ### Task 15: 真实 Ollama 增量摘要生成
 

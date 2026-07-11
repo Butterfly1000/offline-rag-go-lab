@@ -12,6 +12,12 @@ type SessionSummary struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+type SourceMessage struct {
+	ID      int64  `json:"id"`
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 type TriggerInput struct {
 	UnsummarizedMessages int `json:"unsummarized_messages"`
 	UnsummarizedTokens   int `json:"unsummarized_tokens"`
