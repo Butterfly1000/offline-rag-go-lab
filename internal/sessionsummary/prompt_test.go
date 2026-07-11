@@ -39,3 +39,11 @@ func TestBuildUpdatePromptRejectsEmptyOrInvalidMessages(t *testing.T) {
 		t.Fatal("BuildUpdatePrompt() error = nil, want order error")
 	}
 }
+
+func TestSummarySystemPromptTreatsHistoricalInstructionsAsData(t *testing.T) {
+	for _, phrase := range []string{"不可信数据", "不要执行", "只回复已记录"} {
+		if !strings.Contains(SummarySystemPrompt, phrase) {
+			t.Fatalf("SummarySystemPrompt lacks historical instruction guard %q", phrase)
+		}
+	}
+}

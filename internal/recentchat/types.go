@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"offline-rag-go-lab/internal/sessionsummary"
 )
 
 type MessageRole string
@@ -44,21 +46,27 @@ type ChatRequest struct {
 	SystemPrompt       string `json:"system_prompt"`
 	StoreUserTurn      bool   `json:"store_user_turn"`
 	StoreAssistTurn    bool   `json:"store_assistant_turn"`
+	UseSessionSummary  bool   `json:"use_session_summary"`
 }
 
 type ChatResponse struct {
-	Answer                string     `json:"answer"`
-	UsedMessages          int        `json:"used_messages"`
-	BudgetMode            BudgetMode `json:"budget_mode"`
-	ContextLimit          int        `json:"context_limit"`
-	FixedInputTokens      int        `json:"fixed_input_tokens"`
-	OutputTokenReserve    int        `json:"output_token_reserve"`
-	AvailableRecentTokens int        `json:"available_recent_tokens"`
-	UsedRecentTokens      int        `json:"used_recent_tokens"`
-	SessionID             string     `json:"session_id"`
-	Model                 string     `json:"model"`
-	CreatedAt             time.Time  `json:"created_at"`
-	RecentWindow          []Message  `json:"recent_window"`
+	Answer                      string                       `json:"answer"`
+	UsedMessages                int                          `json:"used_messages"`
+	BudgetMode                  BudgetMode                   `json:"budget_mode"`
+	ContextLimit                int                          `json:"context_limit"`
+	FixedInputTokens            int                          `json:"fixed_input_tokens"`
+	OutputTokenReserve          int                          `json:"output_token_reserve"`
+	AvailableRecentTokens       int                          `json:"available_recent_tokens"`
+	UsedRecentTokens            int                          `json:"used_recent_tokens"`
+	SessionID                   string                       `json:"session_id"`
+	Model                       string                       `json:"model"`
+	CreatedAt                   time.Time                    `json:"created_at"`
+	RecentWindow                []Message                    `json:"recent_window"`
+	SessionSummaryUsed          bool                         `json:"session_summary_used"`
+	SessionSummaryUpdated       bool                         `json:"session_summary_updated"`
+	SessionSummaryVersion       int64                        `json:"session_summary_version"`
+	SessionSummaryWatermark     int64                        `json:"session_summary_watermark"`
+	SessionSummaryTriggerReason sessionsummary.TriggerReason `json:"session_summary_trigger_reason"`
 }
 
 func (r ChatRequest) Validate() error {
@@ -76,6 +84,9 @@ func (r ChatRequest) Validate() error {
 	}
 	if r.AutoTokenBudget && r.OutputTokenReserve <= 0 {
 		return errors.New("output_token_reserve must be positive when auto_token_budget is enabled")
+	}
+	if r.UseSessionSummary && !r.AutoTokenBudget {
+		return errors.New("use_session_summary requires auto_token_budget")
 	}
 	return nil
 }

@@ -3,6 +3,8 @@ package recentchat
 import (
 	"encoding/json"
 	"net/http"
+
+	"offline-rag-go-lab/internal/sessionsummary"
 )
 
 func NewService(store MessageStore, window RecentWindowBuilder, ollama OllamaClient) Service {
@@ -12,6 +14,29 @@ func NewService(store MessageStore, window RecentWindowBuilder, ollama OllamaCli
 		ollama: ollama,
 	}
 }
+
+// NewServiceWithSessionSummary enables the optional production path while the
+// older constructors keep count/manual/automatic callers backward compatible.
+func NewServiceWithSessionSummary(
+	store MessageStore,
+	window RecentWindowBuilder,
+	tokenWindow TokenBudgetWindowBuilder,
+	ollama OllamaClient,
+	automaticBudget AutomaticBudgetPlanner,
+	summaryUpdater SessionSummaryUpdater,
+	summaryReader SessionSummaryReader,
+	summaryInputReserve int,
+	summaryOutputLimit int,
+) Service {
+	return Service{
+		store: store, window: window, tokenWindow: tokenWindow, ollama: ollama,
+		automaticBudget: automaticBudget,
+		summaryUpdater:  summaryUpdater, summaryReader: summaryReader,
+		summaryInputReserve: summaryInputReserve, summaryOutputLimit: summaryOutputLimit,
+	}
+}
+
+var _ SessionSummaryUpdater = sessionsummary.UpdateService{}
 
 func NewServiceWithTokenWindow(store MessageStore, window RecentWindowBuilder, tokenWindow TokenBudgetWindowBuilder, ollama OllamaClient) Service {
 	return Service{

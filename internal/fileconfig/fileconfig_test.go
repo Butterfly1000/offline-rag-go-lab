@@ -30,3 +30,16 @@ func TestRequiredRejectsMissingAndEmptyValues(t *testing.T) {
 		t.Fatal("Required() error=nil, want empty value error")
 	}
 }
+
+func TestIntOrDefaultParsesValueAndUsesFallback(t *testing.T) {
+	values := map[string]string{"LIMIT": "256"}
+	if got, err := IntOrDefault(values, "LIMIT", 128); err != nil || got != 256 {
+		t.Fatalf("IntOrDefault()=(%d,%v), want (256,nil)", got, err)
+	}
+	if got, err := IntOrDefault(values, "MISSING", 128); err != nil || got != 128 {
+		t.Fatalf("IntOrDefault()=(%d,%v), want fallback", got, err)
+	}
+	if _, err := IntOrDefault(map[string]string{"LIMIT": "bad"}, "LIMIT", 128); err == nil {
+		t.Fatal("IntOrDefault() error=nil, want parse error")
+	}
+}

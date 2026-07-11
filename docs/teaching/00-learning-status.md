@@ -147,16 +147,26 @@ token 主线当前状态：
 
 **已形成“模型容量 -> 完整计数 -> 自动预算 -> 历史裁剪 -> 生成上限 -> API 可观测”的真实闭环。**
 
-Session Summary 当前已完成第 13 节：
+Session Summary 第 13-18 节已经完成真实闭环：
 
-1. 定义 summary record 和 `last_message_id` 水位
-2. 提供 `session_summaries` MySQL 建表 SQL
-3. 实现“驱逐前置 + message/token 双阈值”触发策略
-4. 用命令和测试验证触发原因及非法输入
+1. 定义 record、watermark 和“驱逐前置 + message/token 阈值”触发策略
+2. 按 watermark 与 recent 起点选择连续旧消息前缀，并用真实 tokenizer 计数
+3. 用 Ollama 把旧 summary 与新增 evicted 消息生成滚动摘要
+4. 用 MySQL version 乐观锁保存 content/watermark，冲突时拒绝覆盖
+5. 编排 message source、selector、trigger、generator 和 store
+6. 用固定 summary reserve 把 summary + recent + current user 接入自动预算 `/chat`
+7. 用真实 MySQL、qwen 和两次 curl 验证 summary 创建、使用、version 和 watermark
+8. 真实发现并修复历史消息指令影响弱模型摘要的 prompt-injection 边界
 
 文档：
 
 - [session-summary-trigger-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-trigger-sop.md:1)
+- [session-summary-selection-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-selection-sop.md:1)
+- [session-summary-generation-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-generation-sop.md:1)
+- [session-summary-store-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-store-sop.md:1)
+- [session-summary-update-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-update-sop.md:1)
+- [recent-chat-session-summary-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-session-summary-sop.md:1)
+- [00-session-summary-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-session-summary-batch-operation-log.md:1)
 
 ---
 
@@ -164,21 +174,22 @@ Session Summary 当前已完成第 13 节：
 
 下一章应当从这里开始：
 
-### 第 2 层下一部分：Session Summary
+### 第 3 层：Long-term Memory Item
 
 核心问题：
 
-- 历史即使按 token 正确裁剪，旧信息仍然会离开 recent window
-- session summary 如何把被裁掉的对话压成持续上下文
-- 什么时候触发摘要、摘要存哪里、下一轮如何合并
+- session summary 是按会话连续压缩，不等于跨会话长期记忆
+- 哪些内容值得提取为 memory item：身份、偏好、项目事实、长期目标或约束
+- 如何分类、去重、更新、删除和记录来源
+- MySQL 结构化 store 与 Qdrant 语义召回各负责什么
 
 这一章推荐拆成下面几段：
 
-1. 设计 session summary 数据结构和触发条件（已完成）
-2. 选择水位之后且已被驱逐的消息，用 Ollama 真实生成增量摘要
-3. 把摘要存入 MySQL memory/session summary store
-4. 下一轮组合 summary + recent window + current user
-5. 再区分 session summary 和 long-term memory
+1. 明确 session summary 与 long-term memory 的行为边界
+2. 定义 memory item schema、生命周期和来源证据
+3. 用真实 Ollama 从消息/摘要提取候选项
+4. 在 MySQL 中完成确定性去重与更新
+5. 再把需要语义召回的 memory item embedding 到 Qdrant
 
 已有概念入口文档：
 
@@ -192,8 +203,8 @@ Session Summary 当前已完成第 13 节：
 
 建议后续按这个顺序继续：
 
-1. 第 2 层：session summary（token budget 已完成）
-2. 第 3 层：memory item 提取、分类、去重、存储
+1. 第 2 层：session summary（已完成真实闭环）
+2. 第 3 层：memory item 提取、分类、去重、存储（下一章）
 3. 第 4 层：memory retrieval 和文档 retrieval 如何并存
 4. 再回头补 chunking / retrieval 的生产级升级
 5. 最后做真正的升级实现
@@ -240,5 +251,7 @@ Session Summary 当前已完成第 13 节：
 5. [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 6. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
 7. [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
+8. [recent-chat-session-summary-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-session-summary-sop.md:1)
+9. [00-session-summary-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-session-summary-batch-operation-log.md:1)
 
-然后从 [session-summary-trigger-sop.md](/offline-rag-go-lab/docs/teaching/session-summary-trigger-sop.md:1) 复核当前接口，再开始“增量摘要输入选择与 Ollama 生成”，不要重新讲 token 或 summary 概念。
+然后确认 Session Summary 已完成第 13-18 节，不要重新实现 token 或 summary。下一次教学应先讨论“session summary 与 long-term memory item 的边界”，用户确认后再进入 memory item schema 和真实提取实践。

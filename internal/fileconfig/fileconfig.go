@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -43,6 +44,19 @@ func Required(values map[string]string, key string) (string, error) {
 	value := strings.TrimSpace(values[key])
 	if value == "" {
 		return "", fmt.Errorf("config value %s is required", key)
+	}
+	return value, nil
+}
+
+// IntOrDefault keeps numeric service settings in the same local file as the DSN.
+func IntOrDefault(values map[string]string, key string, fallback int) (int, error) {
+	raw := strings.TrimSpace(values[key])
+	if raw == "" {
+		return fallback, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("parse config value %s=%q as integer: %w", key, raw, err)
 	}
 	return value, nil
 }

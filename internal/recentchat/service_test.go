@@ -44,6 +44,15 @@ func TestChatRequestRequiresOutputReserveForAutomaticBudget(t *testing.T) {
 	}
 }
 
+func TestChatRequestRequiresAutomaticBudgetForSessionSummary(t *testing.T) {
+	req := ChatRequest{
+		SessionID: "s1", UserID: "u1", Message: "hello", UseSessionSummary: true,
+	}
+	if err := req.Validate(); err == nil || !strings.Contains(err.Error(), "auto_token_budget") {
+		t.Fatalf("Validate() error = %v, want automatic budget requirement", err)
+	}
+}
+
 var fixedNow = func() time.Time {
 	return time.Date(2026, time.June, 29, 10, 30, 0, 0, time.UTC)
 }

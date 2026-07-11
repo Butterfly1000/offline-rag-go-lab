@@ -128,3 +128,43 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现 Critical 或 Important 问题
+
+## 第 18 节：Session Summary 接入自动预算 `/chat`
+
+### RED/GREEN
+
+- summary service 测试因请求字段、构造器、依赖接口和 summary block 缺失而 RED，接入后 GREEN
+- file config 整数测试因 `IntOrDefault` 缺失而 RED，实现后 GREEN
+- prompt injection guard 测试因 system prompt 未声明历史为不可信数据而 RED，强化规则后 GREEN
+
+### 状态影响
+
+- `/chat` 新增显式 `use_session_summary` 和五个 response 观测字段
+- summary 模式仅允许 automatic budget，并加入固定 input reserve、实际 summary 计数和最终二次规划
+- `recent-chat` 启动改为直接读 file config，并装配 MySQL source/store、tokenizer、Ollama updater
+- 旧请求不开 summary 时不要求新依赖，现有测试保持通过
+
+### 真实实践
+
+- 使用独立服务端口 `18094` 和专用 session，不修改已有聊天 session
+- 两次超预算请求分别被 `fixed+output` 和 `summary reserve` 校验在写入前拒绝
+- 第一个 session 技术闭环成功，但历史“只回复已记录”导致数据库摘要质量错误
+- Review 将其定位为历史 prompt injection，新增 RED 测试并强化 summary system prompt
+- 全新 `summary-chat-20260712-b` 两请求复验成功
+- 第一次：`fixed=2429, output=29800, available=539, used=0, summary used/updated=false`
+- 第二次：recent ID `18`，`used_recent_tokens=30`，summary used/updated=true，`version=1, watermark=17`
+- 数据库摘要和主回答都保留 Go、真实操作教学、文件配置三个事实
+- 教学服务验证后已停止
+
+### 验证与 Review
+
+- Review 确认 summary 开关关闭时旧 count/manual/automatic 路径不要求新依赖
+- Review 确认 updater 后重新读取、完整 summary system message 计数和最终二次预算顺序
+- Review 确认最终容量不足时返回错误，不在 watermark 已确定后再次驱逐 raw history
+- Review 确认真实失败请求都发生在模型/数据库写入前；验证服务结束后已停止
+- `go test ./...` 通过
+- `go test -race ./internal/recentchat ./internal/sessionsummary ./internal/fileconfig` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现未处理的 Critical 或 Important 问题

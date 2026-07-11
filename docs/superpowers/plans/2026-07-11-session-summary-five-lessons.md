@@ -143,17 +143,17 @@ func (s UpdateService) Update(req UpdateRequest) (UpdateResult, error)
 
 **Produces:** request/response summary fields and optional summary dependencies in `Service`.
 
-- [ ] RED tests for request validation, conservative reserve, update/read ordering, combined system prompt, final budget invariant, old-request compatibility, dependency/error handling, and response fields.
-- [ ] Implement `use_session_summary` only with automatic budget; configure summary input reserve/output limit in `recent-chat`.
-- [ ] Verify actual formatted summary tokens do not exceed reserve and final available history is not below conservative selection budget.
-- [ ] Run real two-request curl on a dedicated session proving summary create/use/version/watermark; document database and response evidence.
-- [ ] Update learning status/backlog, run complete audit, commit `feat: integrate session summary into chat`.
+- [x] RED tests for request validation, conservative reserve, update/read ordering, combined system prompt, final budget invariant, old-request compatibility, dependency/error handling, and response fields.
+- [x] Implement `use_session_summary` only with automatic budget; configure summary input reserve/output limit in `recent-chat`.
+- [x] Verify actual formatted summary tokens do not exceed reserve and final available history is not below conservative selection budget.
+- [x] Run real two-request curl on a dedicated session proving summary create/use/version/watermark; document database and response evidence.
+- [x] Update learning status/backlog, run complete audit, commit `feat: integrate session summary into chat`.
 
 ## Completion Audit
 
-- [ ] Exactly five implementation commits after this plan.
-- [ ] Five SOPs and practical evidence exist.
-- [ ] Full test/race/vet/build/diff checks pass.
-- [ ] Real curl proves Session Summary closed loop.
-- [ ] No credentials or local assets tracked.
-- [ ] Worktree clean; no push.
+- [x] Exactly five implementation commits after this plan.
+- [x] Five SOPs and practical evidence exist.
+- [x] Full test/race/vet/build/diff checks pass.
+- [x] Real curl proves Session Summary closed loop.
+- [x] No credentials or local assets tracked.
+- [x] Worktree clean; no push.
