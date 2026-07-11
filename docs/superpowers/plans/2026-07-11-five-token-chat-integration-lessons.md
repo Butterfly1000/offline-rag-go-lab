@@ -34,7 +34,7 @@
 - Produces: `QwenFormatter.FormatMessage(Message) (string, error)`
 - Produces: `QwenFormatter.AssistantPrefix() string`
 
-- [ ] **Step 1: Write failing formatter tests**
+- [x] **Step 1: Write failing formatter tests**
 
 ```go
 func TestQwenFormatterFormatsRoleContentAndBoundaries(t *testing.T) {
@@ -49,13 +49,13 @@ func TestQwenFormatterRejectsUnknownRole(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/chatprompt`
 
 Expected: compile failure because `QwenFormatter` does not exist.
 
-- [ ] **Step 3: Implement the minimal formatter**
+- [x] **Step 3: Implement the minimal formatter**
 
 ```go
 type Message struct {
@@ -71,13 +71,13 @@ func (QwenFormatter) AssistantPrefix() string
 
 Allow only `system`, `user`, `assistant`, and `tool`; use `strings.Builder` so the wrapper is visible and testable.
 
-- [ ] **Step 4: Add the practical command and SOP**
+- [x] **Step 4: Add the practical command and SOP**
 
 Run: `go run ./cmd/message-format-demo --role user --content '你好，解释 token。'`
 
 Expected output includes the role marker, content, end marker, and real newline boundaries.
 
-- [ ] **Step 5: Review, verify, and commit**
+- [x] **Step 5: Review, verify, and commit**
 
 Run formatter tests, `go test ./...`, `go vet ./internal/chatprompt ./cmd/message-format-demo`, `go build ./cmd/...`, and `git diff --check`.
 
