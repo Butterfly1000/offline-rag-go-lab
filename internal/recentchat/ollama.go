@@ -163,6 +163,14 @@ func (c *HTTPOllamaClient) Show(model string) (OllamaModelSummary, error) {
 	}, nil
 }
 
+func (c *HTTPOllamaClient) ContextLength(model string) (int, error) {
+	summary, err := c.Show(model)
+	if err != nil {
+		return 0, err
+	}
+	return summary.ContextLength, nil
+}
+
 func rawString(raw json.RawMessage) (string, error) {
 	if len(raw) == 0 {
 		return "", errors.New("metadata field is missing")

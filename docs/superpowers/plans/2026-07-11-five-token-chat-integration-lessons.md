@@ -229,7 +229,7 @@ Commit: `feat: count formatted recent message tokens`
 - Produces: `AutomaticPlanner.Plan(model string, fixed []chatprompt.Message, outputReserve int) (AutomaticPlan, error)`
 - Produces: `HTTPOllamaClient.ContextLength(model string) (int, error)`
 
-- [ ] **Step 1: Write failing automatic planner tests**
+- [x] **Step 1: Write failing automatic planner tests**
 
 ```go
 func TestAutomaticPlannerUsesModelContextAndCompleteFixedPrompt(t *testing.T) {
@@ -242,13 +242,13 @@ func TestAutomaticPlannerPropagatesContextAndCounterErrors(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/promptbudget`
 
 Expected: compile failure because `AutomaticPlanner` does not exist.
 
-- [ ] **Step 3: Implement the planner and Ollama adapter**
+- [x] **Step 3: Implement the planner and Ollama adapter**
 
 ```go
 type ContextProvider interface {
@@ -267,13 +267,13 @@ type AutomaticPlan struct {
 
 `AutomaticPlanner.Plan` calls the provider, counts fixed messages with assistant prefix, then delegates arithmetic to existing `Plan`.
 
-- [ ] **Step 4: Add real Ollama/tokenizer command and SOP**
+- [x] **Step 4: Add real Ollama/tokenizer command and SOP**
 
 Run: `go run ./cmd/automatic-budget-demo --model qwen:7b --system '你是 Go 助手。' --prompt '解释 recent window。' --output-reserve 2048`
 
 Expected output shows context limit, fixed prompt tokens, output reserve, and available history tokens.
 
-- [ ] **Step 5: Review, verify, and commit**
+- [x] **Step 5: Review, verify, and commit**
 
 Run target/full/race tests, vet, all command builds, real command if Ollama is available, and `git diff --check`.
 

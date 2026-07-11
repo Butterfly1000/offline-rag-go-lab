@@ -92,6 +92,28 @@ func TestHTTPOllamaClientShowRejectsMissingContextMetadata(t *testing.T) {
 	}
 }
 
+func TestHTTPOllamaClientContextLengthUsesShowMetadata(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+  "model_info": {
+    "general.architecture": "qwen2",
+    "qwen2.context_length": 32768
+  }
+}`))
+	}))
+	defer server.Close()
+
+	client := NewHTTPOllamaClient(server.URL)
+	got, err := client.ContextLength("qwen:7b")
+	if err != nil {
+		t.Fatalf("ContextLength() error = %v", err)
+	}
+	if got != 32768 {
+		t.Fatalf("ContextLength() = %d, want 32768", got)
+	}
+}
+
 func equalModelSummary(left, right OllamaModelSummary) bool {
 	if left.Model != right.Model ||
 		left.Family != right.Family ||

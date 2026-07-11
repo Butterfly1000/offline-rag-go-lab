@@ -162,3 +162,48 @@ go test ./internal/recentchat -run 'TestFormattedTokenWindow'
 - Review 发现：strict 模式收到 `budget = 0` 时会沿用旧逻辑返回全部历史，可能导致自动预算溢出
 - 修复证据：先新增 zero-budget 测试并观察到失败，再让 strict 模式返回空窗口；legacy 行为不变
 - 最终 Review：未发现其他 Critical 或 Important 问题
+
+## 第 11 节：自动历史预算规划
+
+### 执行操作
+
+1. 新增模型 context、完整固定 prompt、错误传播和超限测试
+2. 新增 Ollama `ContextLength` adapter 测试
+3. 确认测试分别因 planner 和 adapter 缺失而失败
+4. 实现自动规划器、Ollama adapter 和真实教学命令
+5. 运行真实 Ollama/tokenizer 实践、回归检查和提交前 review
+
+### 状态影响
+
+- 仓库：新增自动预算代码、测试、命令和 SOP
+- Ollama：实践只读调用 `/api/show`，不生成回答、不修改模型
+- tokenizer：只读本地资产
+- MySQL/Qdrant：没有访问
+- 现有 `/chat`：本节尚未接入自动模式
+- Git：只创建本地 commit，不 push
+
+### 风险分析
+
+- provider 和 counter 均为接口，纯规划器不依赖 HTTP 或数据库
+- 任一步失败直接返回 error，不使用字符估算兜底
+- 复用现有 `Plan` 算术，避免两套容量公式漂移
+- 当前每次规划读取一次 model metadata，缓存优化留到多模型阶段
+
+### RED 证据
+
+- `go test ./internal/promptbudget` 因 `NewAutomaticPlanner` 缺失而失败
+- Ollama adapter 测试因 `ContextLength` 方法缺失而失败
+
+### GREEN 与 review 证据
+
+- 目标测试：`go test ./internal/promptbudget` 通过
+- Ollama adapter 测试：`TestHTTPOllamaClientContextLengthUsesShowMetadata` 通过
+- 正常实践：context `32768`、fixed `64`、reserve `2048`、history `30656`
+- 算术核对：`64 + 2048 + 30656 = 32768`
+- 失败实践：fixed + reserve 为 `32832` 时以退出码 `1` 拒绝
+- sandbox 说明：首次真实命令被本地网络限制拒绝，使用已授权的只读 Ollama 命令重跑成功
+- 回归测试：`go test ./...` 通过
+- 并发检查：`chatprompt`、`promptbudget`、`recentchat` 的 `-race` 测试通过
+- 静态检查：`go vet ./...` 通过
+- 命令构建：`go build ./cmd/...` 通过
+- Review：未发现 Critical 或 Important 问题
