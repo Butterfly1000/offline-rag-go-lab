@@ -46,11 +46,13 @@
 
 ### 3. 完整 chat template 计数
 
-为什么需要：当前 recent window 主要计算 `message.Content`，没有包含角色标记、消息边界和完整模板开销。
+当前进度：项目已经按 Qwen ChatML 计算 role、消息边界、完整固定 prompt 和 recent history，并接入自动预算。
+
+为什么仍需要：尚未用 Ollama 实际 `prompt_eval_count` 对多轮黄金样例做严格误差对照。
 
 何时再做：开始统一分配 system、history、retrieval、user input 和 output reserve 预算时。
 
-目标结果：请求前计算结果与实际发送给模型的模板 token 数一致。
+目标结果：请求前计算结果与 Ollama 返回的实际 prompt token 数在黄金样例中一致。
 
 ### 4. 多模型 tokenizer 注册表
 
@@ -99,6 +101,30 @@
 何时再做：切换模型后，`promptbudget.Render` 因未知函数解析失败时。
 
 目标结果：只补实际模型所需的函数映射和测试，不提前复制 Ollama 的完整模板运行时。
+
+### 10. Model metadata 缓存
+
+为什么需要：automatic 模式当前每次请求都会调用一次 Ollama `/api/show`。
+
+何时再做：真实并发或多模型服务开始运行时。
+
+目标结果：按模型缓存 context length，并在模型版本或配置变化时安全刷新。
+
+### 11. 历史消息成对裁剪
+
+为什么需要：当前严格窗口按单条 message 选择，极端预算下可能只保留 assistant 而丢掉对应 user 问题。
+
+何时再做：session summary 和上下文质量课程开始时。
+
+目标结果：定义 turn 边界，在容量允许时优先保留完整 user/assistant turn，并明确 tool message 的归属。
+
+### 12. 预算与 Ollama usage 对照监控
+
+为什么需要：当前 `output_token_reserve` 已绑定 `num_predict`，但 API 尚未保存 Ollama 的 `prompt_eval_count` 和 `eval_count`。
+
+何时再做：需要评估预算利用率、调整默认回答预留或验证本地 token 误差时。
+
+目标结果：记录计划值和 Ollama 实际 usage，形成误差与利用率指标。
 
 ---
 

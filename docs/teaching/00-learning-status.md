@@ -49,7 +49,7 @@
 
 文档：
 
-- [01-chat-behavior.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/01-chat-behavior.md:1)
+- [01-chat-behavior.md](/offline-rag-go-lab/docs/teaching/01-chat-behavior.md:1)
 
 ### 已完成：课程 02 `ingest behavior`
 
@@ -62,7 +62,7 @@
 
 文档：
 
-- [02-ingest-behavior.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/02-ingest-behavior.md:1)
+- [02-ingest-behavior.md](/offline-rag-go-lab/docs/teaching/02-ingest-behavior.md:1)
 
 ### 已完成：课程 03 的部分内容 `chunking behavior`
 
@@ -73,7 +73,7 @@
 
 文档：
 
-- [03-chunking-behavior.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/03-chunking-behavior.md:1)
+- [03-chunking-behavior.md](/offline-rag-go-lab/docs/teaching/03-chunking-behavior.md:1)
 
 ### 已完成：Recent Window Layer 01
 
@@ -96,8 +96,8 @@
 
 文档：
 
-- [recent-window-layer-01.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
-- [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
+- [recent-window-layer-01.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
+- [recent-window-runtime-sop.md](/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
 
 ---
 
@@ -121,6 +121,11 @@
 5. 用 Go `text/template` 渲染当前 Ollama 模型的 system/user prompt
 6. 对比正文 token、rendered prompt token 和 template overhead
 7. 用 context limit、固定输入和 output reserve 计算 recent history budget
+8. 把单条历史格式化为包含 role 和消息边界的 Qwen ChatML
+9. 对完整 system/history/user/assistant-prefix conversation 做一次性 token 计数
+10. 让 recent window 按格式化消息 token 严格裁剪
+11. 从 Ollama context length、固定输入和回答预留自动计算历史预算
+12. 把自动预算、严格裁剪和 `num_predict` 接入真实 `/chat`，并返回预算明细
 
 文档：
 
@@ -131,7 +136,16 @@
 - [prompt-template-render-sop.md](/offline-rag-go-lab/docs/teaching/prompt-template-render-sop.md:1)
 - [prompt-template-token-overhead-sop.md](/offline-rag-go-lab/docs/teaching/prompt-template-token-overhead-sop.md:1)
 - [context-budget-plan-sop.md](/offline-rag-go-lab/docs/teaching/context-budget-plan-sop.md:1)
+- [qwen-message-format-sop.md](/offline-rag-go-lab/docs/teaching/qwen-message-format-sop.md:1)
+- [conversation-token-count-sop.md](/offline-rag-go-lab/docs/teaching/conversation-token-count-sop.md:1)
+- [recent-window-template-token-sop.md](/offline-rag-go-lab/docs/teaching/recent-window-template-token-sop.md:1)
+- [automatic-history-budget-sop.md](/offline-rag-go-lab/docs/teaching/automatic-history-budget-sop.md:1)
+- [recent-chat-automatic-token-budget-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-automatic-token-budget-sop.md:1)
 - [00-optimization-backlog.md](/offline-rag-go-lab/docs/teaching/00-optimization-backlog.md:1)
+
+token 主线当前状态：
+
+**已形成“模型容量 -> 完整计数 -> 自动预算 -> 历史裁剪 -> 生成上限 -> API 可观测”的真实闭环。**
 
 ---
 
@@ -139,25 +153,25 @@
 
 下一章应当从这里开始：
 
-### 第 2 层：从“最近”到“重要”
+### 第 2 层下一部分：Session Summary
 
 核心问题：
 
-- 为什么 `recent_limit = 1` 时会把真正重要的信息裁掉
-- 为什么“最近”不等于“重要”
-- 为什么只按消息条数裁剪不够
+- 历史即使按 token 正确裁剪，旧信息仍然会离开 recent window
+- session summary 如何把被裁掉的对话压成持续上下文
+- 什么时候触发摘要、摘要存哪里、下一轮如何合并
 
 这一章推荐拆成下面几段：
 
-1. 为什么 count-based recent window 会失真
-2. 什么是 token-budget-based recent window
-3. 为什么需要 session summary
-4. session summary 和 long-term memory 的边界
-5. 生产里如何把 recent / summary / memory / retrieval 合并
+1. 设计 session summary 数据结构和触发条件
+2. 用 Ollama 真实生成增量摘要
+3. 把摘要存入 MySQL memory/session summary store
+4. 下一轮组合 summary + recent window + current user
+5. 再区分 session summary 和 long-term memory
 
-这一章的第一个正式教学入口文档已经准备好：
+已有概念入口文档：
 
-- [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
+- [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 - [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
 - [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 
@@ -167,7 +181,7 @@
 
 建议后续按这个顺序继续：
 
-1. 第 2 层：token budget + session summary
+1. 第 2 层：session summary（token budget 已完成）
 2. 第 3 层：memory item 提取、分类、去重、存储
 3. 第 4 层：memory retrieval 和文档 retrieval 如何并存
 4. 再回头补 chunking / retrieval 的生产级升级
@@ -208,12 +222,12 @@
 
 新模型继续教学前，应先读取：
 
-1. [00-teaching-protocol.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-teaching-protocol.md:1)
-2. [00-learning-status.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
-3. [recent-window-layer-01.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
-4. [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
-5. [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
+1. [00-teaching-protocol.md](/offline-rag-go-lab/docs/teaching/00-teaching-protocol.md:1)
+2. [00-learning-status.md](/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
+3. [recent-window-layer-01.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
+4. [recent-window-runtime-sop.md](/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
+5. [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 6. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
 7. [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 
-然后从“第 2 层第一小段”开始继续，而不是重新回到项目介绍。
+然后从 `recent-window-layer-02c-session-summary.md` 的落地设计开始，而不是重新讲 token 或项目介绍。

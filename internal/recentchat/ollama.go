@@ -17,9 +17,14 @@ type OllamaMessage struct {
 }
 
 type OllamaChatRequest struct {
-	Model    string          `json:"model"`
-	Messages []OllamaMessage `json:"messages"`
-	Stream   bool            `json:"stream"`
+	Model    string             `json:"model"`
+	Messages []OllamaMessage    `json:"messages"`
+	Stream   bool               `json:"stream"`
+	Options  *OllamaChatOptions `json:"options,omitempty"`
+}
+
+type OllamaChatOptions struct {
+	NumPredict int `json:"num_predict"`
 }
 
 type OllamaChatResponse struct {

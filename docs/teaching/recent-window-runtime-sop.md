@@ -20,14 +20,14 @@
 
 当前 `recent-chat` 入口代码在：
 
-- [cmd/recent-chat/main.go](/Users/huangyanyu/offline-rag-go-lab/cmd/recent-chat/main.go:1)
+- [cmd/recent-chat/main.go](/offline-rag-go-lab/cmd/recent-chat/main.go:1)
 
 核心业务链路在：
 
-- [internal/recentchat/service.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/service.go:1)
-- [internal/recentchat/store_mysql.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/store_mysql.go:1)
-- [internal/recentchat/window_count.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/window_count.go:1)
-- [internal/recentchat/http.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/http.go:1)
+- [internal/recentchat/service.go](/offline-rag-go-lab/internal/recentchat/service.go:1)
+- [internal/recentchat/store_mysql.go](/offline-rag-go-lab/internal/recentchat/store_mysql.go:1)
+- [internal/recentchat/window_count.go](/offline-rag-go-lab/internal/recentchat/window_count.go:1)
+- [internal/recentchat/http.go](/offline-rag-go-lab/internal/recentchat/http.go:1)
 
 ---
 
@@ -73,11 +73,11 @@ curl -X POST http://127.0.0.1:18093/chat \
 
 HTTP 入口在：
 
-- [http.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/http.go:24)
+- [http.go](/offline-rag-go-lab/internal/recentchat/http.go:24)
 
 真正业务逻辑在：
 
-- [service.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/service.go:15)
+- [service.go](/offline-rag-go-lab/internal/recentchat/service.go:15)
 
 这轮会依次发生：
 
@@ -121,7 +121,7 @@ ORDER BY id ASC;
 
 写回逻辑在：
 
-- [service.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/service.go:65)
+- [service.go](/offline-rag-go-lab/internal/recentchat/service.go:65)
 
 当请求里这两个开关都是 `true` 时：
 
@@ -143,7 +143,7 @@ if req.StoreAssistTurn {
 
 真实 SQL 插入在：
 
-- [store_mysql.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/store_mysql.go:58)
+- [store_mysql.go](/offline-rag-go-lab/internal/recentchat/store_mysql.go:58)
 
 也就是说，第一轮的 user 消息和 assistant 回答会一起变成下一轮 recent window 的原料。
 
@@ -184,7 +184,7 @@ curl -X POST http://127.0.0.1:18093/chat \
 
 查 recent messages 的逻辑在：
 
-- [store_mysql.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/store_mysql.go:16)
+- [store_mysql.go](/offline-rag-go-lab/internal/recentchat/store_mysql.go:16)
 
 SQL 会先按倒序查最近消息：
 
@@ -244,7 +244,7 @@ curl -X POST http://127.0.0.1:18093/chat \
 
 当前 recent window 策略在：
 
-- [window_count.go](/Users/huangyanyu/offline-rag-go-lab/internal/recentchat/window_count.go:5)
+- [window_count.go](/offline-rag-go-lab/internal/recentchat/window_count.go:5)
 
 实现是：
 
@@ -309,3 +309,35 @@ func (b CountWindowBuilder) Build(messages []Message, maxMessages int) []Message
 2. 增加 session summary
 3. 增加 memory item 提取和存储
 4. 再把 memory retrieval 和文档 retrieval 合并
+
+---
+
+## 9. SOP 10：自动 token budget
+
+旧 SOP 6 到 SOP 9 仍用于理解 count-based recent window。当前项目已经继续升级为 automatic token budget。
+
+完整运行手册：
+
+- [recent-chat-automatic-token-budget-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-automatic-token-budget-sop.md:1)
+
+新请求核心字段：
+
+```json
+{
+  "auto_token_budget": true,
+  "output_token_reserve": 256
+}
+```
+
+新响应核心字段：
+
+```text
+budget_mode
+context_limit
+fixed_input_tokens
+output_token_reserve
+available_recent_tokens
+used_recent_tokens
+```
+
+第 1 层 count window 已经用于打基础；automatic token budget 是第 2 层容量控制的真实落地。

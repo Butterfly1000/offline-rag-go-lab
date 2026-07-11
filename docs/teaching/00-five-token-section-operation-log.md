@@ -207,3 +207,69 @@ go test ./internal/recentchat -run 'TestFormattedTokenWindow'
 - 静态检查：`go vet ./...` 通过
 - 命令构建：`go build ./cmd/...` 通过
 - Review：未发现 Critical 或 Important 问题
+
+## 第 12 节：`/chat` 自动预算和可观测性
+
+### 执行操作
+
+1. 新增请求校验、三种模式、自动规划、默认 fetch limit、错误传播和严格窗口测试
+2. 确认测试因 automatic 请求/响应字段和 service 依赖缺失而失败
+3. 实现 automatic service 编排和预算响应字段
+4. Review 发现回答预留未绑定真实生成上限、零值字段会被隐藏
+5. 新增失败测试并实现 Ollama `options.num_predict` 与稳定 JSON 字段
+6. 启动真实 recent-chat，使用现有 MySQL 历史和 Ollama 做不写库 curl 验证
+7. 更新运行 SOP、学习状态和优化清单
+
+### 状态影响
+
+- 仓库：修改 `/chat` 类型、服务、Ollama request 和装配，新增测试与文档
+- MySQL：只读 `s-001` 历史；请求关闭两个 store 开关，没有新增消息
+- Ollama：读取 `/api/show` 并执行一次真实 `/api/chat` 生成
+- Qdrant：没有访问
+- Git：只创建本地 commit，不 push
+
+### 风险分析
+
+- automatic 和 manual 参数冲突会在调用外部系统前失败
+- automatic 模式要求 strict window，防止错误装配突破预算
+- 回答预留同步传为 `num_predict`，预算与真实最大生成长度一致
+- 所有预算字段即使为 `0` 也出现在 JSON，避免隐藏“没有历史容量”
+- 真实验证使用 `store_user_turn=false` 和 `store_assistant_turn=false`，不污染聊天历史
+
+### RED 证据
+
+- 第一轮 RED：缺少 automatic 请求字段、响应字段、预算模式和 service planner
+- Review RED：缺少 `OllamaChatOptions`，且 zero breakdown JSON 字段被 `omitempty` 隐藏
+
+### 真实验证结果
+
+```text
+budget_mode = automatic
+context_limit = 32768
+fixed_input_tokens = 61
+output_token_reserve = 256
+available_recent_tokens = 32451
+used_recent_tokens = 541
+used_messages = 6
+```
+
+模型回答确认项目使用 Go。临时服务验证后已停止。
+
+### GREEN 与 review 证据
+
+- automatic service、request validation、JSON 和 Ollama options 目标测试通过
+- 回归测试：`go test ./...` 通过
+- 并发检查：`chatprompt`、`promptbudget`、`recentchat` 的 `-race` 测试通过
+- 静态检查：`go vet ./...` 通过
+- 命令构建：`go build ./cmd/...` 通过
+- 格式检查：`git diff --check` 通过
+- Review 发现的 `num_predict` 和 zero-field 问题均有 RED/GREEN 测试并已修复
+- 敏感信息检查：未提交本机配置、tokenizer 资产、DSN 或凭据
+- 最终 Review：未发现其他 Critical 或 Important 问题
+
+## 批次结论
+
+- 第 08 到第 12 节分别实现并准备独立 commit
+- token 主线已形成真实 `/chat` 闭环
+- 下一章是 session summary
+- 本批次没有执行 `git push`

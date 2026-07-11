@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"offline-rag-go-lab/internal/chatprompt"
+	"offline-rag-go-lab/internal/promptbudget"
 	"offline-rag-go-lab/internal/recentchat"
 	"offline-rag-go-lab/internal/tokenizerdemo"
 )
@@ -35,11 +36,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	service := recentchat.NewServiceWithTokenWindow(
+	formatter := chatprompt.QwenFormatter{}
+	ollama := recentchat.NewHTTPOllamaClient(envOrDefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434"))
+	automaticBudget := promptbudget.NewAutomaticPlanner(
+		ollama,
+		chatprompt.NewTokenCounter(tokenCounter, formatter),
+	)
+	service := recentchat.NewServiceWithAutomaticBudget(
 		recentchat.NewMySQLMessageStore(db),
 		recentchat.CountWindowBuilder{},
-		recentchat.NewFormattedTokenBudgetWindowBuilder(tokenCounter, chatprompt.QwenFormatter{}),
-		recentchat.NewHTTPOllamaClient(envOrDefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")),
+		recentchat.NewFormattedTokenBudgetWindowBuilder(tokenCounter, formatter),
+		ollama,
+		automaticBudget,
 	)
 
 	mux := http.NewServeMux()

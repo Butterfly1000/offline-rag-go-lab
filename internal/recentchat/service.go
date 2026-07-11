@@ -3,14 +3,24 @@ package recentchat
 import (
 	"errors"
 	"time"
+
+	"offline-rag-go-lab/internal/chatprompt"
+	"offline-rag-go-lab/internal/promptbudget"
 )
 
+const defaultTokenBudgetFetchLimit = 50
+
+type AutomaticBudgetPlanner interface {
+	Plan(model string, fixed []chatprompt.Message, outputReserve int) (promptbudget.AutomaticPlan, error)
+}
+
 type Service struct {
-	store       MessageStore
-	window      RecentWindowBuilder
-	tokenWindow TokenBudgetWindowBuilder
-	ollama      OllamaClient
-	nowFunc     func() time.Time
+	store           MessageStore
+	window          RecentWindowBuilder
+	tokenWindow     TokenBudgetWindowBuilder
+	ollama          OllamaClient
+	automaticBudget AutomaticBudgetPlanner
+	nowFunc         func() time.Time
 }
 
 func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
@@ -30,9 +40,38 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		s.nowFunc = time.Now
 	}
 
+	budgetMode := BudgetModeCount
+	historyBudget := req.RecentTokenBudget
+	automaticPlan := promptbudget.AutomaticPlan{}
+	if req.RecentTokenBudget > 0 {
+		budgetMode = BudgetModeManual
+	}
+	if req.AutoTokenBudget {
+		if s.automaticBudget == nil {
+			return ChatResponse{}, errors.New("automatic budget planner is required for auto_token_budget")
+		}
+		if !s.tokenWindow.strict {
+			return ChatResponse{}, errors.New("strict token window is required for auto_token_budget")
+		}
+
+		fixed := make([]chatprompt.Message, 0, 2)
+		if req.SystemPrompt != "" {
+			fixed = append(fixed, chatprompt.Message{Role: string(RoleSystem), Content: req.SystemPrompt})
+		}
+		fixed = append(fixed, chatprompt.Message{Role: string(RoleUser), Content: req.Message})
+
+		var err error
+		automaticPlan, err = s.automaticBudget.Plan(req.Model, fixed, req.OutputTokenReserve)
+		if err != nil {
+			return ChatResponse{}, err
+		}
+		budgetMode = BudgetModeAutomatic
+		historyBudget = automaticPlan.AvailableHistoryTokens
+	}
+
 	fetchLimit := req.RecentLimit
-	if fetchLimit <= 0 && req.RecentTokenBudget > 0 {
-		fetchLimit = 50
+	if fetchLimit <= 0 && budgetMode != BudgetModeCount {
+		fetchLimit = defaultTokenBudgetFetchLimit
 	}
 
 	recent, err := s.store.ListRecentBySession(req.SessionID, fetchLimit)
@@ -41,11 +80,11 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 	}
 	selected := s.window.Build(recent, req.RecentLimit)
 	usedRecentTokens := 0
-	if req.RecentTokenBudget > 0 {
+	if budgetMode != BudgetModeCount {
 		if s.tokenWindow.counter == nil {
-			return ChatResponse{}, errors.New("token window builder is required for recent_token_budget")
+			return ChatResponse{}, errors.New("token window builder is required for token budget mode")
 		}
-		selected, usedRecentTokens, err = s.tokenWindow.Build(recent, req.RecentTokenBudget)
+		selected, usedRecentTokens, err = s.tokenWindow.Build(recent, historyBudget)
 		if err != nil {
 			return ChatResponse{}, err
 		}
@@ -69,11 +108,15 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		Content: req.Message,
 	})
 
-	chatResp, err := s.ollama.Chat(OllamaChatRequest{
+	ollamaRequest := OllamaChatRequest{
 		Model:    req.Model,
 		Messages: ollamaMessages,
 		Stream:   false,
-	})
+	}
+	if budgetMode == BudgetModeAutomatic {
+		ollamaRequest.Options = &OllamaChatOptions{NumPredict: req.OutputTokenReserve}
+	}
+	chatResp, err := s.ollama.Chat(ollamaRequest)
 	if err != nil {
 		return ChatResponse{}, err
 	}
@@ -103,12 +146,17 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 	}
 
 	return ChatResponse{
-		Answer:           chatResp.Content,
-		UsedMessages:     len(selected),
-		UsedRecentTokens: usedRecentTokens,
-		SessionID:        req.SessionID,
-		Model:            req.Model,
-		CreatedAt:        now,
-		RecentWindow:     selected,
+		Answer:                chatResp.Content,
+		UsedMessages:          len(selected),
+		BudgetMode:            budgetMode,
+		ContextLimit:          automaticPlan.ContextLimit,
+		FixedInputTokens:      automaticPlan.FixedInputTokens,
+		OutputTokenReserve:    automaticPlan.OutputReserve,
+		AvailableRecentTokens: automaticPlan.AvailableHistoryTokens,
+		UsedRecentTokens:      usedRecentTokens,
+		SessionID:             req.SessionID,
+		Model:                 req.Model,
+		CreatedAt:             now,
+		RecentWindow:          selected,
 	}, nil
 }

@@ -299,7 +299,7 @@ Commit: `feat: plan recent history budget automatically`
 - Produces response fields: `BudgetMode`, `ContextLimit`, `FixedInputTokens`, `OutputTokenReserve`, `AvailableRecentTokens`
 - Produces: `NewServiceWithAutomaticBudget(...) Service`
 
-- [ ] **Step 1: Write failing validation and service tests**
+- [x] **Step 1: Write failing validation and service tests**
 
 ```go
 func TestChatRequestRejectsConflictingAutomaticAndManualBudgets(t *testing.T) {}
@@ -312,13 +312,13 @@ func TestServiceUsesAutomaticBudgetAndReturnsBreakdown(t *testing.T) {
 func TestServiceKeepsLegacyCountAndManualModes(t *testing.T) {}
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/recentchat`
 
 Expected: compile failure because new request/response fields and constructor do not exist.
 
-- [ ] **Step 3: Implement service orchestration**
+- [x] **Step 3: Implement service orchestration**
 
 ```go
 type AutomaticBudgetPlanner interface {
@@ -336,7 +336,7 @@ else -> count
 
 Automatic mode plans before selecting history, uses default fetch limit `50` only when `recent_limit <= 0`, and returns all breakdown fields.
 
-- [ ] **Step 4: Wire main, document curl, and update learning status**
+- [x] **Step 4: Wire main, document curl, and update learning status**
 
 Run the service and send:
 
@@ -358,7 +358,7 @@ curl -X POST http://127.0.0.1:18093/chat \
 
 Document how to read each response field and clearly state whether the real curl was executed.
 
-- [ ] **Step 5: Perform completion audit and commit**
+- [x] **Step 5: Perform completion audit and commit**
 
 Run:
 
