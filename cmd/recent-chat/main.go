@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	"offline-rag-go-lab/internal/chatprompt"
 	"offline-rag-go-lab/internal/recentchat"
 	"offline-rag-go-lab/internal/tokenizerdemo"
 )
@@ -37,7 +38,7 @@ func main() {
 	service := recentchat.NewServiceWithTokenWindow(
 		recentchat.NewMySQLMessageStore(db),
 		recentchat.CountWindowBuilder{},
-		recentchat.NewTokenBudgetWindowBuilder(tokenCounter),
+		recentchat.NewFormattedTokenBudgetWindowBuilder(tokenCounter, chatprompt.QwenFormatter{}),
 		recentchat.NewHTTPOllamaClient(envOrDefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")),
 	)
 

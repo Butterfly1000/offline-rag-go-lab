@@ -112,3 +112,53 @@ go test ./internal/chatprompt
 - 完整实践：4 条消息的 rendered conversation 为 `122` tokens
 - 对照实践：去掉两条历史后，2 条消息为 `62` tokens
 - Review：未发现 Critical 或 Important 问题
+
+## 第 10 节：模板感知的 recent window
+
+### 执行操作
+
+1. 新增格式化消息计数、严格超预算和非法角色测试
+2. 确认测试因新构造器缺失而失败
+3. 扩展 `TokenBudgetWindowBuilder`，同时保留 legacy 和 formatted strict 模式
+4. 把真实 `recent-chat` 入口切换到 formatted strict 模式
+5. 新增教学 SOP，并运行回归与提交前 review
+
+### 状态影响
+
+- 仓库：修改 recent window 选择器和服务装配，新增测试与 SOP
+- `/chat`：手动 `recent_token_budget` 的计数从正文升级为完整 Qwen 消息
+- tokenizer：服务启动时仍只读现有本地资产
+- Ollama/MySQL/Qdrant：本节自动验证没有访问或修改
+- Git：只创建本地 commit，不 push
+
+### 风险分析
+
+- 旧构造器和测试保留，已有 content-only 教学行为可继续对照
+- 真实入口改用严格模式，历史消息不会突破 token budget
+- 严格模式可能返回空历史，这是容量安全行为，不影响当前用户消息
+- user/assistant 成对保留尚未实现，已明确作为后续上下文质量增强
+
+### RED 证据
+
+执行：
+
+```bash
+go test ./internal/recentchat -run 'TestFormattedTokenWindow'
+```
+
+失败原因：`NewFormattedTokenBudgetWindowBuilder` 不存在，符合测试先行预期。
+
+### 验证环境说明
+
+第一次运行整个 `internal/recentchat` package 时，sandbox 禁止 `httptest` 监听回环端口。使用已授权的本项目 Go 测试命令在非 sandbox 环境重跑后通过；这不是代码测试失败。
+
+### GREEN 与 review 证据
+
+- 目标测试：formatted 和 legacy token window 测试通过
+- 回归测试：`go test ./...` 通过
+- 并发检查：目标 window 测试使用 `-race` 通过
+- 静态检查：`go vet ./internal/recentchat ./cmd/recent-chat` 通过
+- 命令构建：`go build ./cmd/...` 通过
+- Review 发现：strict 模式收到 `budget = 0` 时会沿用旧逻辑返回全部历史，可能导致自动预算溢出
+- 修复证据：先新增 zero-budget 测试并观察到失败，再让 strict 模式返回空窗口；legacy 行为不变
+- 最终 Review：未发现其他 Critical 或 Important 问题

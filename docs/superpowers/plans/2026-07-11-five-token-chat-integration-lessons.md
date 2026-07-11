@@ -167,7 +167,7 @@ Commit: `feat: count complete Qwen conversation tokens`
 - Preserves: `NewTokenBudgetWindowBuilder(counter)` as legacy content-only behavior
 - Produces: `NewFormattedTokenBudgetWindowBuilder(counter, formatter) TokenBudgetWindowBuilder`
 
-- [ ] **Step 1: Write failing strict formatted-window tests**
+- [x] **Step 1: Write failing strict formatted-window tests**
 
 ```go
 func TestFormattedTokenWindowCountsRoleAndBoundaries(t *testing.T) {
@@ -181,13 +181,13 @@ func TestFormattedTokenWindowDoesNotForceOversizedNewestMessage(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `env GOCACHE=$PWD/.cache/go-build GOSUMDB=off go test ./internal/recentchat -run 'TestFormattedTokenWindow'`
 
 Expected: compile failure because `NewFormattedTokenBudgetWindowBuilder` does not exist.
 
-- [ ] **Step 3: Implement the formatted strict mode**
+- [x] **Step 3: Implement the formatted strict mode**
 
 ```go
 type TokenBudgetWindowBuilder struct {
@@ -201,11 +201,11 @@ func NewFormattedTokenBudgetWindowBuilder(counter TextTokenCounter, formatter ch
 
 Legacy constructor continues counting `Content` and preserving the existing oversized-newest behavior. The formatted constructor counts the complete wrapper and never exceeds the budget.
 
-- [ ] **Step 4: Wire the real service entry and write SOP**
+- [x] **Step 4: Wire the real service entry and write SOP**
 
 Change `cmd/recent-chat` to construct the formatted builder. Use target tests as the no-database practice; document the existing curl with `recent_token_budget` for real MySQL/Ollama verification.
 
-- [ ] **Step 5: Review, verify, and commit**
+- [x] **Step 5: Review, verify, and commit**
 
 Run target/full/race tests, vet, command builds, `git diff --check`, and inspect compatibility tests.
 
