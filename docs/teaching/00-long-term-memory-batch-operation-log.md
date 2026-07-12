@@ -133,3 +133,36 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现未处理的 Critical 或 Important 问题
+
+## 第 21 节：规范化与确定性生命周期决策
+
+### RED/GREEN
+
+- resolver 测试先因 `Resolve`、`ResolveBatch` 和 action 类型不存在而编译 RED，最小实现后 GREEN
+- batch review 发现 identity 在规范化前建立，新增混合格式 key 回归测试先 RED，改为排序前统一规范化后 GREEN
+
+### 状态影响
+
+- 新增纯 Go resolver、batch resolver、测试、demo 和 SOP
+- 未访问 Ollama、MySQL 或 Qdrant
+- 未修改 `/chat`、消息、summary、collection 或 point
+
+### 实践结果
+
+- `implementation_language` 按顺序得到 INSERT v1、NOOP v1、UPDATE v2、FORGET v3、恢复 UPDATE v4
+- equivalent value 的空白/大小写差异不会增加 version
+- FORGET 保留审计 value，但 status 变为 forgotten；本节没有宣称物理擦除
+- batch 按最小来源 ID 稳定处理，并能链式处理同一 identity
+
+### 验证与 Review
+
+- Review 发现 batch 在 identity 规范化前查 state，混合格式 key 可能产生两个 INSERT；回归测试先 RED，修复后 GREEN
+- Review 确认 public Resolve 拒绝无有效 ID/version 的 persisted current，batch 只对本批新 INSERT 使用 provisional ID
+- Review 确认 resolver 不修改调用方 current/candidate，missing forget 不创建 item
+- Review 确认 SOP 区分停止召回和物理数据擦除
+- `go test ./...` 通过
+- `go test -race ./internal/memoryitem` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现未处理的 Critical 或 Important 问题

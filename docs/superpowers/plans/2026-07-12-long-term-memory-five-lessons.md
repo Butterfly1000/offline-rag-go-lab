@@ -252,7 +252,7 @@ git commit -m "feat: extract structured memory candidates"
 - Consumes: Task 19 已校验的 `Candidate`、`Item`、`Status`。
 - Produces: `Action`、`Decision`、`Resolve`、`ResolveBatch`。
 
-- [ ] **Step 1: 写四种决策和恢复行为 RED 测试**
+- [x] **Step 1: 写四种决策和恢复行为 RED 测试**
 
 ```go
 func TestResolveUpdatesChangedValue(t *testing.T) {
@@ -269,13 +269,13 @@ func TestResolveUpdatesChangedValue(t *testing.T) {
 
 覆盖 INSERT、UPDATE、NOOP、FORGET、forgotten 恢复、重复 forget、key/kind 不匹配、非法 current version，以及 batch 的稳定来源顺序和冲突可观测结果。
 
-- [ ] **Step 2: 运行 RED**
+- [x] **Step 2: 运行 RED**
 
 Run: `go test ./internal/memoryitem -run 'TestResolve'`
 
 Expected: FAIL，因为 resolver 类型和函数尚不存在。
 
-- [ ] **Step 3: 实现确定性 resolver**
+- [x] **Step 3: 实现确定性 resolver**
 
 ```go
 type Action string
@@ -300,7 +300,7 @@ func ResolveBatch(current map[string]Item, candidates []Candidate) ([]Decision, 
 
 NOOP 不增加 version；insert 从 version 1 开始；update、forget 和恢复增加 version；batch identity key 使用 `kind + "\x00" + key`，并按最小来源 ID 和原始顺序稳定处理。
 
-- [ ] **Step 4: GREEN 与实践命令**
+- [x] **Step 4: GREEN 与实践命令**
 
 Run: `go test ./internal/memoryitem`
 
@@ -308,7 +308,7 @@ Run: `go run ./cmd/memory-resolve-demo`
 
 Expected output 依次展示：INSERT Go、NOOP Go、UPDATE Rust、FORGET、恢复 UPDATE Go，并打印每一步 version。
 
-- [ ] **Step 5: SOP、review 和独立提交**
+- [x] **Step 5: SOP、review 和独立提交**
 
 SOP 必须说明“LLM 提候选，Go 决策”的职责分离、相同 key 去重边界、为什么缺失候选不能删除。完整执行全量测试、race、vet、build、diff check。
 
