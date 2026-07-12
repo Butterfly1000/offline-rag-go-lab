@@ -38,7 +38,7 @@
 - Consumes: 无；本节是后续四节的领域基线。
 - Produces: `SourceMessage`、`Candidate`、`Item`、`ValidateAndNormalizeCandidate`。
 
-- [ ] **Step 1: 写候选校验 RED 测试**
+- [x] **Step 1: 写候选校验 RED 测试**
 
 测试表至少包含：合法 upsert、合法 forget、未知 operation/kind、非法 key、空 upsert value、confidence 越界、空来源、未知来源、跨用户来源、assistant-only 来源和重复来源 ID。
 
@@ -62,13 +62,13 @@ func TestValidateAndNormalizeCandidate(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行 RED**
+- [x] **Step 2: 运行 RED**
 
 Run: `go test ./internal/memoryitem -run TestValidateAndNormalizeCandidate`
 
 Expected: FAIL，因为 `SourceMessage`、`Candidate` 和 `ValidateAndNormalizeCandidate` 尚不存在。
 
-- [ ] **Step 3: 实现最小领域类型和校验器**
+- [x] **Step 3: 实现最小领域类型和校验器**
 
 ```go
 type Operation string
@@ -92,18 +92,18 @@ const (
     StatusForgotten Status = "forgotten"
 )
 
-func ValidateAndNormalizeCandidate(userID string, candidate Candidate, messages []SourceMessage) (Candidate, error)
+func ValidateAndNormalizeCandidate(userID, sessionID string, candidate Candidate, messages []SourceMessage) (Candidate, error)
 ```
 
-实现必须：规范化 key 为 snake_case、裁剪 value、验证枚举和 confidence、去重并保持来源 ID 顺序、确认每个来源属于当前用户且 role 为 user。forget 不要求 value，但必须有明确来源。
+实现必须：规范化 key 为 snake_case、裁剪 value、验证枚举和 confidence、去重并保持来源 ID 顺序、确认每个来源属于当前用户、当前 session 且 role 为 user。forget 不要求 value，但必须有明确来源。
 
-- [ ] **Step 4: 运行 GREEN 和完整 package 测试**
+- [x] **Step 4: 运行 GREEN 和完整 package 测试**
 
 Run: `go test ./internal/memoryitem`
 
 Expected: PASS，所有边界测试通过。
 
-- [ ] **Step 5: 添加纯 Go 实践命令**
+- [x] **Step 5: 添加纯 Go 实践命令**
 
 Run: `go run ./cmd/memory-item-validate-demo`
 
@@ -115,7 +115,7 @@ Sources: 101
 Rejected assistant-only source: source message 102 must have role user
 ```
 
-- [ ] **Step 6: 编写 SOP、记录影响并 review**
+- [x] **Step 6: 编写 SOP、记录影响并 review**
 
 SOP 必须讲清 session summary 与 memory item 边界、五种 kind、来源约束和为什么模型输出仍需 Go 校验。操作日志记录本节只改纯 Go 代码和文档，未访问 MySQL/Ollama/Qdrant。
 
@@ -129,7 +129,7 @@ go build ./cmd/...
 git diff --check
 ```
 
-- [ ] **Step 7: 独立提交**
+- [x] **Step 7: 独立提交**
 
 ```bash
 git add internal/memoryitem cmd/memory-item-validate-demo docs/teaching/memory-item-validation-sop.md docs/teaching/00-long-term-memory-batch-operation-log.md

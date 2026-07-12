@@ -54,3 +54,36 @@
 5. 最终验证命令与结果
 
 只有已经发生的操作才写为完成事实；尚未执行的外部实践保留在实施计划，不提前记录为成功。
+
+## 第 19 节：Memory Item 边界、类型与来源校验
+
+### RED/GREEN
+
+- 先新增 validator 测试，因 `SourceMessage`、`Candidate`、`Operation` 和 `ValidateAndNormalizeCandidate` 不存在而编译 RED
+- 新增领域类型和校验器后，`go test ./internal/memoryitem` GREEN
+- 设计复核发现只检查 user 仍可能混入同一用户另一 session 的消息，因此入口同时接收并校验 `session_id`
+
+### 状态影响
+
+- 新增纯 Go memory item 类型、候选校验器、测试、demo 和 SOP
+- 未访问 MySQL、Ollama 或 Qdrant
+- 未修改 `/chat`、已有消息、summary、collection 或 point
+
+### 实践结果
+
+- `Implementation Language` 被规范化为 `implementation_language`
+- 合法用户消息 `101` 成为来源证据
+- assistant 消息 `102` 作为唯一来源时被明确拒绝
+- demo 输出与 SOP 记录一致
+
+### 验证与 Review
+
+- Review 确认 user/session/role/content 四个来源边界都在 Go 侧强制校验
+- Review 确认 NaN/Inf、空值、长度、非法 key 和重复来源都有确定行为
+- Review 确认文档没有把本节描述成已完成 MySQL 或 Qdrant
+- `go test ./...` 通过
+- `go test -race ./internal/memoryitem` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现未处理的 Critical 或 Important 问题

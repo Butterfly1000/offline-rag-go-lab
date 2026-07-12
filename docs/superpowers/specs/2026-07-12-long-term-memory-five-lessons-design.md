@@ -101,7 +101,7 @@ type Item struct {
 ### 来源约束
 
 1. 每个候选至少引用一个本次输入中的正数 message ID。
-2. 被引用消息必须属于当前 `user_id`，且 role 必须为 `user`。
+2. 被引用消息必须属于当前 `user_id` 和当前 `session_id`，且 role 必须为 `user`。
 3. assistant 消息可以作为上下文，但不能成为用户记忆的唯一证据。
 4. session summary 可以帮助发现候选，但接受候选时仍必须能回指原始用户消息。
 5. `forget` 必须有明确用户消息证据；不能因为某事实本轮没有出现就删除。
