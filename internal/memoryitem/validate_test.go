@@ -71,6 +71,32 @@ func TestValidateAndNormalizeForgetClearsOptionalValue(t *testing.T) {
 	}
 }
 
+func TestValidateAndNormalizeForgetRequiresExplicitUserRequest(t *testing.T) {
+	messages := []SourceMessage{{
+		ID: 101, SessionID: "memory-validation", UserID: "u-001", Role: "user", Content: "我叫小黄。",
+	}}
+	_, err := ValidateAndNormalizeCandidate("u-001", "memory-validation", Candidate{
+		Operation: OperationForget, Kind: KindIdentity, Key: "name", Value: "小黄",
+		Confidence: 0.95, SourceMessageIDs: []int64{101},
+	}, messages)
+	if err == nil || !strings.Contains(err.Error(), "explicit user forget request") {
+		t.Fatalf("error = %v, want explicit forget evidence error", err)
+	}
+}
+
+func TestValidateAndNormalizeForgetRejectsRememberInstruction(t *testing.T) {
+	messages := []SourceMessage{{
+		ID: 101, SessionID: "memory-validation", UserID: "u-001", Role: "user", Content: "请不要忘记我的名字。",
+	}}
+	_, err := ValidateAndNormalizeCandidate("u-001", "memory-validation", Candidate{
+		Operation: OperationForget, Kind: KindIdentity, Key: "name", Value: "小黄",
+		Confidence: 0.95, SourceMessageIDs: []int64{101},
+	}, messages)
+	if err == nil || !strings.Contains(err.Error(), "explicit user forget request") {
+		t.Fatalf("error = %v, want remember instruction to reject forget", err)
+	}
+}
+
 func TestValidateAndNormalizeCandidateRejectsInvalidInput(t *testing.T) {
 	validMessages := []SourceMessage{{
 		ID:        101,

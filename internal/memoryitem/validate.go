@@ -61,6 +61,9 @@ func ValidateAndNormalizeCandidate(userID, sessionID string, candidate Candidate
 	if err != nil {
 		return Candidate{}, err
 	}
+	if operation == OperationForget && !hasExplicitForgetRequest(sourceIDs, sourceMessages) {
+		return Candidate{}, fmt.Errorf("forget requires an explicit user forget request in its source messages")
+	}
 
 	candidate.Operation = operation
 	candidate.Kind = kind
@@ -68,6 +71,25 @@ func ValidateAndNormalizeCandidate(userID, sessionID string, candidate Candidate
 	candidate.Value = value
 	candidate.SourceMessageIDs = sourceIDs
 	return candidate, nil
+}
+
+func hasExplicitForgetRequest(sourceIDs []int64, messages map[int64]SourceMessage) bool {
+	phrases := []string{
+		"请忘掉", "请忘记", "不要记住", "删除关于", "删除这条记忆", "清除关于", "清除这条记忆",
+		"please forget", "do not remember", "remove this memory", "delete this memory",
+	}
+	for _, sourceID := range sourceIDs {
+		content := strings.ToLower(strings.TrimSpace(messages[sourceID].Content))
+		if strings.HasPrefix(content, "忘掉") || strings.HasPrefix(content, "忘记") || strings.HasPrefix(content, "forget ") {
+			return true
+		}
+		for _, phrase := range phrases {
+			if strings.Contains(content, phrase) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func normalizeOperation(operation Operation) (Operation, error) {

@@ -176,6 +176,32 @@
 
 目标结果：评估 session 级串行、异步 worker 或超时降级；任何异步方案仍必须保持消息区间幂等和 watermark 只在成功保存后推进。
 
+## Long-term Memory 优化项
+
+### 1. 升级 Ollama 后恢复完整 JSON schema 对照
+
+为什么需要：当前本机 Ollama `0.23.2` 在完整嵌套约束组合下可重复触发 Metal runner SIGSEGV，只能使用兼容 schema，并把其余边界放在 Go validator。
+
+何时再做：用户升级 Ollama 后，或正式部署采用与本机不同的 Ollama 版本时。
+
+目标结果：用普通 chat、最小 schema、当前兼容 schema和完整 schema 四组黄金请求回归；只有确认 runner 稳定后才恢复更多 schema 约束，同时保留 Go 二次校验。
+
+### 2. Memory key ontology 与提取召回率评估
+
+为什么需要：真实 `qwen:7b` 能安全提取姓名和 Go 项目事实，但没有提取全部教学偏好和约束，并把项目语言 key 输出为 `language` 而不是示例中的 `implementation_language`。
+
+何时再做：第 23 节闭环完成并积累多组真实提取样例后。
+
+目标结果：建立受控 key 列表/alias、事实召回率和误提取样例；不要仅通过继续加长 prompt 修复每个个案。
+
+### 3. Confidence 的来源和校准
+
+为什么需要：弱模型曾在 schema 声明 0-1 时仍输出 `100`，说明模型自报 confidence 不能直接当质量概率。
+
+何时再做：需要按置信度自动写入、人工审核或拒绝候选时。
+
+目标结果：用标注样例校准提取质量，或改为由规则/审核结果产生可信等级；在此之前 confidence 只用于观测，Go 仍严格拒绝越界值。
+
 ---
 
 ## 后续主题如何追加

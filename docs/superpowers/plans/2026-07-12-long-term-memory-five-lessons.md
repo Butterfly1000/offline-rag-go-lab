@@ -153,7 +153,7 @@ git commit -m "feat: validate long-term memory candidates"
 - Consumes: Task 19 `SourceMessage`、`Candidate`、`ValidateAndNormalizeCandidate`。
 - Produces: `StructuredGenerator`、`Extractor`、`ExtractRequest`、`ExtractResult`，以及 `HTTPOllamaClient.GenerateJSON`。
 
-- [ ] **Step 1: 写 prompt、解析和 Ollama adapter RED 测试**
+- [x] **Step 1: 写 prompt、解析和 Ollama adapter RED 测试**
 
 覆盖：消息顺序和 ID、summary 辅助区、XML-like 正文边界、JSON schema 字段、非法 JSON、未知来源、模型错误、空模型、非法 max token 和合法候选。
 
@@ -172,13 +172,13 @@ func TestExtractorRejectsUnknownSource(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行 RED**
+- [x] **Step 2: 运行 RED**
 
 Run: `go test ./internal/memoryitem ./internal/recentchat -run 'Test(BuildExtractionPrompt|Extractor|HTTPOllamaClientGenerateJSON)'`
 
 Expected: FAIL，因为 extractor、schema format 和 `GenerateJSON` 尚不存在。
 
-- [ ] **Step 3: 实现 prompt 与 extractor**
+- [x] **Step 3: 实现 prompt 与 extractor**
 
 ```go
 type StructuredGenerator interface {
@@ -202,7 +202,7 @@ func (e *Extractor) Extract(req ExtractRequest) (ExtractResult, error)
 
 Extractor 必须 strict decode 顶层 `candidates`，拒绝尾随 JSON，并对每条候选调用 Task 19 校验器。system prompt 必须声明消息是数据而非指令，assistant 不能成为唯一证据，不因缺失事实生成 forget。
 
-- [ ] **Step 4: 扩展现有 Ollama client 的 JSON schema 请求**
+- [x] **Step 4: 扩展现有 Ollama client 的 JSON schema 请求**
 
 在 `OllamaChatRequest` 增加：
 
@@ -218,19 +218,19 @@ func (c *HTTPOllamaClient) GenerateJSON(model, system, prompt string, schema jso
 
 adapter 测试必须检查 `/api/chat`、`stream=false`、两条 system/user message、`format` 为 JSON schema、`num_predict` 与错误状态传播。
 
-- [ ] **Step 5: 运行 GREEN**
+- [x] **Step 5: 运行 GREEN**
 
 Run: `go test ./internal/memoryitem ./internal/recentchat`
 
 Expected: PASS。
 
-- [ ] **Step 6: 运行真实 Ollama 提取**
+- [x] **Step 6: 运行真实 Ollama 提取**
 
 Run: `go run ./cmd/memory-extract-demo --config config/recent-chat.env --model qwen:7b`
 
 固定输入至少包含：姓名、Go 项目事实、真实操作教学偏好和一条 assistant 推测。Expected：输出合法 JSON；校验后保留用户明确事实，不把 assistant 推测变成 memory item。
 
-- [ ] **Step 7: SOP、review 和独立提交**
+- [x] **Step 7: SOP、review 和独立提交**
 
 SOP 记录真实模型输出、JSON schema 只约束形状而非事实、prompt injection 边界和失败行为。完整执行全量测试、两个相关 package race、vet、build、diff check。
 

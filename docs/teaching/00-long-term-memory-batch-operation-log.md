@@ -87,3 +87,49 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现未处理的 Critical 或 Important 问题
+
+## 第 20 节：真实 Ollama 结构化候选提取
+
+### RED/GREEN
+
+- prompt/extractor 测试先因 API 不存在而编译 RED，最小实现后 GREEN
+- Ollama adapter 测试先因 `Format` 和 `GenerateJSON` 不存在而编译 RED，接入 `/api/chat` 后 GREEN
+- schema compatibility、explicit temperature、confidence 格式和 destructive forget gate 都保留独立 RED/GREEN 证据
+
+### 外部调用与状态影响
+
+- 多次调用本机 Ollama `qwen:7b` 做只读生成验证
+- 只读检查 `ollama ps`、`/api/version` 和本机 Ollama server log
+- 未访问 MySQL，未创建/修改 Qdrant collection 或 point
+- 未修改模型资产、Ollama 配置或已有聊天数据
+
+### 真实故障与定位
+
+- 初始完整嵌套 schema 可重复得到 HTTP 500：`model runner has unexpectedly stopped`
+- server log 证明 runner 发生 `SIGSEGV` 并以 status 2 退出
+- 普通 chat 成功，单字段 schema 成功，pattern、numeric range 和 source array 单独测试都成功
+- 保持完整候选对象结构、减少非必要嵌套约束后 runner 稳定
+- 当前兼容 schema 保留结构/required/enum/key pattern/confidence range，其余规则由 Go validator 强制执行
+
+### 真实质量问题与修复
+
+- 第一次兼容 schema 返回合法空 candidates，增加明确提取要求和 `temperature=0`
+- 模型先输出中文 key，被 key pattern 和 Go validator 拒绝
+- 模型两次输出 `confidence=100`，增加明确 0-1 小数提示；Go validator 始终拒绝越界值
+- 模型把“我叫小黄”误判为 forget，新增来源正文 destructive gate 并强化 upsert/forget 示例
+- 最终输出 2 条通过校验的 upsert：`identity/name=小黄`、`project_fact/language=Go`
+- assistant 的 Rust 推测没有进入候选
+
+### 验证与 Review
+
+- Review 发现 broad phrase `忘记我` 会误匹配“请不要忘记我的名字”并错误放行 forget
+- 新增回归测试先 RED，移除 broad substring 后 GREEN；明确遗忘请求仍通过
+- Review 确认兼容 schema 省略的长度、范围和来源规则都由 Go validator 测试覆盖
+- Review 确认 strict decoder 拒绝尾随 JSON、顶层/候选额外字段和缺失 required 字段
+- Review 确认普通 GenerateText 不会自动携带 temperature，只有 GenerateJSON 显式 temperature=0
+- `go test ./...` 通过
+- `go test -race ./internal/memoryitem ./internal/recentchat` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 通过
+- 最终 Review：未发现未处理的 Critical 或 Important 问题

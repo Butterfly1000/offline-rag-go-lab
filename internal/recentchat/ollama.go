@@ -20,11 +20,13 @@ type OllamaChatRequest struct {
 	Model    string             `json:"model"`
 	Messages []OllamaMessage    `json:"messages"`
 	Stream   bool               `json:"stream"`
+	Format   json.RawMessage    `json:"format,omitempty"`
 	Options  *OllamaChatOptions `json:"options,omitempty"`
 }
 
 type OllamaChatOptions struct {
-	NumPredict int `json:"num_predict"`
+	NumPredict  int      `json:"num_predict"`
+	Temperature *float64 `json:"temperature,omitempty"`
 }
 
 type OllamaChatResponse struct {
@@ -127,6 +129,47 @@ func (c *HTTPOllamaClient) GenerateText(model, system, prompt string, maxTokens 
 		return "", err
 	}
 	return response.Content, nil
+}
+
+// GenerateJSON asks Ollama to constrain the model response with a JSON schema.
+// Callers must still validate the decoded facts because schema only controls shape.
+func (c *HTTPOllamaClient) GenerateJSON(model, system, prompt string, schema json.RawMessage, maxTokens int) ([]byte, error) {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return nil, fmt.Errorf("Ollama model is required")
+	}
+	if strings.TrimSpace(system) == "" {
+		return nil, fmt.Errorf("Ollama system prompt is required")
+	}
+	if strings.TrimSpace(prompt) == "" {
+		return nil, fmt.Errorf("Ollama user prompt is required")
+	}
+	if len(schema) == 0 || !json.Valid(schema) {
+		return nil, fmt.Errorf("Ollama JSON schema must be valid JSON")
+	}
+	if maxTokens <= 0 {
+		return nil, fmt.Errorf("Ollama max output tokens must be positive: %d", maxTokens)
+	}
+
+	temperature := 0.0
+	response, err := c.Chat(OllamaChatRequest{
+		Model: model,
+		Messages: []OllamaMessage{
+			{Role: RoleSystem, Content: system},
+			{Role: RoleUser, Content: prompt},
+		},
+		Stream:  false,
+		Format:  append(json.RawMessage(nil), schema...),
+		Options: &OllamaChatOptions{NumPredict: maxTokens, Temperature: &temperature},
+	})
+	if err != nil {
+		return nil, err
+	}
+	content := strings.TrimSpace(response.Content)
+	if content == "" {
+		return nil, fmt.Errorf("Ollama structured response is empty")
+	}
+	return []byte(content), nil
 }
 
 // Show reads model metadata used when constructing a real Ollama request.
