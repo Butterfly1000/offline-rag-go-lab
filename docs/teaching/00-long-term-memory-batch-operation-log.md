@@ -166,3 +166,43 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 通过
 - 最终 Review：未发现未处理的 Critical 或 Important 问题
+
+## 第 22 节：MySQL Memory Store 与来源证据事务
+
+### RED/GREEN
+
+- 先新增 store/adapter 测试，因 `MemoryStore`、事务接口和 MySQL queries 不存在而编译 RED，实现后 GREEN
+- 测试覆盖 INSERT、NOOP、UPDATE、FORGET、恢复、evidence 幂等、rollback、commit 失败、version/duplicate conflict 和 user scope
+- review 后新增 demo fixture/终态测试，先因固定专用身份和 `classifyDemoState` 不存在而 RED，实现后 GREEN
+
+### 外部写入与授权
+
+- 用户在执行前通过权限确认批准真实 MySQL 实践
+- 幂等创建 `memory_items`、`memory_item_evidence`
+- 只向 `recent_chat_messages` 写入 session `memory-store-demo-20260712-a`、user `memory-store-demo-user-20260712-a` 的 6 条 user fixture
+- 只为该 user 写入 2 条 memory item 和 6 条 evidence
+- 未修改现有聊天、summary、其他用户数据或任何 Qdrant collection/point
+
+### 真实实践结果
+
+- `implementation_language`：INSERT v1 -> NOOP v1 -> UPDATE Rust v2 -> UPDATE Go v3
+- `temporary_tool`：INSERT Vim v1 -> FORGET v2
+- 最终 active item 为 1，evidence 为 6
+- 第二次运行识别完整终态并输出 `no writes applied`，active 仍为 1、evidence 仍为 6
+
+### Review 发现与处理
+
+- P1：demo 原本允许任意 `--user-id/--session-id`，可能污染真实身份；已移除覆盖参数并固定专用身份
+- P2：已有 6 条任意消息会被硬映射成 fixture candidate；已逐条校验 role 与正文
+- P2：重跑会再次执行 Go/Rust/Go 和 Vim/forget，造成 version 增长；已增加终态识别，完整终态只读返回，部分状态报错停止
+- P2：补充 forgotten 恢复、reader/locked item 跨用户负向测试
+- 真实并发重试策略和 evidence 复合外键属于生产增强，记录到 optimization backlog，不扩大本节范围
+
+### 验证与 Review
+
+- `go test ./...` 通过
+- `go test -race ./internal/memoryitem ./cmd/memory-store-demo` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `git diff --check` 和本次 diff 敏感信息扫描通过
+- 最终 Review：此前 P1/P2 findings 已修复，没有遗留的 Critical 或 Important 问题

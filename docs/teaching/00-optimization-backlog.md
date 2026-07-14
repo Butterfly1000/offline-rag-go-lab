@@ -202,6 +202,22 @@
 
 目标结果：用标注样例校准提取质量，或改为由规则/审核结果产生可信等级；在此之前 confidence 只用于观测，Go 仍严格拒绝越界值。
 
+### 4. MySQL memory conflict 重试与真实并发压测
+
+为什么需要：当前 Store 能检测 `version` 零影响和 duplicate insert conflict，但把重试交给调用方；尚未用并发请求和真实 InnoDB 锁等待数据确定重试次数、退避和超时。
+
+何时再做：memory extraction 进入并发 worker，或真实观察到 conflict/lock timeout 时。
+
+目标结果：对可重试错误做有限次数、带抖动的重试，记录 conflict/timeout 指标，并用真实 MySQL 并发集成测试验证同一 identity 不丢更新。
+
+### 5. Evidence user 复合外键 migration
+
+为什么需要：当前 evidence 通过 `memory_item_id` 外键关联 item，Store 同时校验并写入相同 `user_id`；数据库 schema 本身仍不能禁止其他写入路径制造父 item 与 evidence user 不一致。
+
+何时再做：建立正式 migration 机制，或出现 Store 之外的 evidence 写入入口时。
+
+目标结果：为父表建立 `(id, user_id)` 唯一键，并让 evidence 使用 `(memory_item_id, user_id)` 复合外键；通过 migration 更新已有表，而不是依赖 `CREATE TABLE IF NOT EXISTS`。
+
 ---
 
 ## 后续主题如何追加

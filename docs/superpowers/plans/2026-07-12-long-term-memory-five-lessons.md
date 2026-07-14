@@ -335,7 +335,7 @@ git commit -m "feat: resolve memory item lifecycle"
 - Consumes: Task 21 `Resolve` 和 `Decision`，Task 19 candidate/source types。
 - Produces: `MemoryStore`、`ApplyRequest`、`ApplyResult`、`Evidence`、`NewMySQLMemoryStore`。
 
-- [ ] **Step 1: 写事务行为 RED 测试**
+- [x] **Step 1: 写事务行为 RED 测试**
 
 ```go
 type MemoryStore interface {
@@ -353,13 +353,13 @@ type ApplyRequest struct {
 
 测试覆盖：首次 insert+evidence、相同值 noop+新 evidence、重复 evidence 幂等、update/version、forget、恢复、跨用户查询、事务回滚、零影响 version conflict、duplicate key conflict 和 SQL 中 user filter/`FOR UPDATE`。
 
-- [ ] **Step 2: 运行 RED**
+- [x] **Step 2: 运行 RED**
 
 Run: `go test ./internal/memoryitem -run 'Test(Store|MySQLMemory)'`
 
 Expected: FAIL，因为 store 和 MySQL adapter 尚不存在。
 
-- [ ] **Step 3: 实现可测试事务边界和业务 store**
+- [x] **Step 3: 实现可测试事务边界和业务 store**
 
 ```go
 var ErrVersionConflict = errors.New("memory item version conflict")
@@ -381,27 +381,27 @@ type ApplyResult struct {
 
 `Apply` 必须在同一事务中读取 `SELECT ... FOR UPDATE`、调用 resolver、写 item 状态并插入 evidence。item 状态未变化时不加 version；evidence 使用唯一键实现幂等。事务失败不返回伪成功结果。
 
-- [ ] **Step 4: 增加 MySQL schema**
+- [x] **Step 4: 增加 MySQL schema**
 
 `memory_items` 使用唯一键 `(user_id, kind, memory_key)`，`memory_item_evidence` 使用唯一键 `(memory_item_id, source_session_id, source_message_id, operation)`，并通过 foreign key 关联 item。两个表使用 InnoDB/utf8mb4；不删除 item，只改变 status。
 
-- [ ] **Step 5: GREEN 和静态 review**
+- [x] **Step 5: GREEN 和静态 review**
 
 Run: `go test ./internal/memoryitem ./cmd/memory-store-demo`
 
 Expected: PASS。检查 SQL 所有查找/更新均包含 user_id，事务 commit/rollback 都有测试。
 
-- [ ] **Step 6: 在真实外部写入前停止并请求许可**
+- [x] **Step 6: 在真实外部写入前停止并请求许可**
 
 向用户说明：将创建两张表，并只写专用 `memory-store-demo-user` 测试数据；不会修改现有消息、summary 或 Qdrant。未获许可时只保留单元测试和 schema，不宣称真实闭环完成。
 
-- [ ] **Step 7: 获批后执行真实 MySQL 实践**
+- [x] **Step 7: 获批后执行真实 MySQL 实践**
 
 Run: `go run ./cmd/memory-store-demo --config config/recent-chat.env --apply-schema`
 
 命令对主要事实按顺序执行 upsert Go、重复 upsert、改为 Rust、改回 Go，Expected：action 为 INSERT/NOOP/UPDATE/UPDATE，version 为 1/1/2/3。再插入并 forget 一条 `temporary_tool`，Expected：INSERT/FORGET、version 1/2。这样既验证遗忘，又保留 active 项供下一节检索；所有 evidence 可追溯，重复运行不重复插入相同来源。
 
-- [ ] **Step 8: SOP、review 和独立提交**
+- [x] **Step 8: SOP、review 和独立提交**
 
 SOP 记录表职责、事务边界、真实行结果和本地配置方式。完整执行全量测试、相关 package/command race、vet、build、diff check，并检查 Git 中无 DSN。
 
