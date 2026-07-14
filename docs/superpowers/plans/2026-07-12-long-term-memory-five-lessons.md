@@ -429,7 +429,7 @@ git commit -m "feat: persist evidenced memory items"
 - Consumes: Task 22 `MemoryStore.ListActive`、`Item` 和 item status/version。
 - Produces: `Embedder`、`HTTPOllamaEmbedder`、`QdrantIndexer`、`SearchResult`。
 
-- [ ] **Step 1: 写 embedding client RED 测试**
+- [x] **Step 1: 写 embedding client RED 测试**
 
 ```go
 type Embedder interface {
@@ -439,7 +439,7 @@ type Embedder interface {
 
 httptest 覆盖 `/api/embed` 请求、多个输入的一一对应、非 2xx、空 vector、NaN/Inf、不同维度、空模型和空文本。
 
-- [ ] **Step 2: 写 Qdrant client RED 测试**
+- [x] **Step 2: 写 Qdrant client RED 测试**
 
 ```go
 type SearchResult struct {
@@ -459,13 +459,13 @@ func (q *QdrantIndexer) Search(ctx context.Context, userID string, kind Kind, ve
 
 测试必须检查：集合名 URL escape、1024/Cosine 配置、已有配置不匹配报错、point ID=item ID、payload version/model、search 强制 user_id filter、可选 kind filter、delete wait=true、错误 body 截断和超时传播。
 
-- [ ] **Step 3: 运行 RED**
+- [x] **Step 3: 运行 RED**
 
 Run: `go test ./internal/memoryitem -run 'Test(HTTPOllamaEmbedder|QdrantIndexer)'`
 
 Expected: FAIL，因为 embedding/Qdrant 类型尚不存在。
 
-- [ ] **Step 4: 实现标准库 HTTP clients**
+- [x] **Step 4: 实现标准库 HTTP clients**
 
 Ollama 使用 `POST /api/embed`。Qdrant 使用：
 
@@ -480,17 +480,17 @@ POST /collections/{collection}/points/delete?wait=true
 
 创建 `user_id` 和 `kind` keyword payload index。集合存在时只核对 `size=1024`、`distance=Cosine`；不匹配时返回错误，不自动删除。
 
-- [ ] **Step 5: GREEN 与全量单元测试**
+- [x] **Step 5: GREEN 与全量单元测试**
 
 Run: `go test ./internal/memoryitem ./cmd/memory-qdrant-demo`
 
 Expected: PASS，httptest 能证明 request body 和 user filter。
 
-- [ ] **Step 6: 在真实 Qdrant 写入前停止并请求许可**
+- [x] **Step 6: 在真实 Qdrant 写入前停止并请求许可**
 
 向用户说明：将创建 `offline_rag_memory_items_v1`、两个 payload index，并写入专用测试用户 points；现有 `ollama_chat_memory` 不读取 payload、不修改。未获许可时不能宣称 Qdrant 闭环完成。
 
-- [ ] **Step 7: 获批后运行真实 embedding 与 Qdrant 实践**
+- [x] **Step 7: 获批后运行真实 embedding 与 Qdrant 实践**
 
 Run: `go run ./cmd/memory-qdrant-demo --config config/recent-chat.env --ensure-collection`
 
@@ -508,11 +508,11 @@ Forgotten item present: false
 
 再使用第二个测试用户写入相近文本，确认第一个用户检索结果不包含第二个用户 point。
 
-- [ ] **Step 8: 更新教学进度、backlog 和 SOP**
+- [x] **Step 8: 更新教学进度、backlog 和 SOP**
 
 SOP 讲清 embedding 与生成模型区别、维度来自真实响应、Cosine、payload filter、MySQL/Qdrant 主从边界和 curl 等价请求。学习进度把第 3 层标记为已完成独立提取/存储/检索闭环，下一章指向 memory retrieval 与 document retrieval 合并。backlog 记录 outbox/rebuild worker、跨 key 语义去重和索引漂移扫描。
 
-- [ ] **Step 9: 最终 review、完整 gate 和独立提交**
+- [x] **Step 9: 最终 review、完整 gate 和独立提交**
 
 执行：
 
@@ -534,12 +534,12 @@ git commit -m "feat: index and search long-term memories"
 
 ## Completion Audit
 
-- [ ] 设计/计划 commit 之后恰好有第 19-23 节五个实现 commit。
-- [ ] 五份 SOP 都包含代码行为、真实命令、结果解释、生产边界和下一步。
-- [ ] 操作影响日志记录每次外部访问、写入范围、review 发现和修复。
-- [ ] `go test ./...`、相关 race、`go vet ./...`、`go build ./cmd/...`、`git diff --check` 全部通过。
-- [ ] 真实 `qwen:7b` 结构化提取通过。
-- [ ] 真实 MySQL insert/update/noop/forget/evidence 通过。
-- [ ] 真实 `bge-m3` 1024 维 embedding 和 Qdrant 用户隔离检索通过。
-- [ ] 现有 `ollama_chat_memory` 和非测试数据未修改。
-- [ ] 工作区干净；只 commit，不 push。
+- [x] 设计/计划 commit 之后恰好有第 19-23 节五个实现 commit。
+- [x] 五份 SOP 都包含代码行为、真实命令、结果解释、生产边界和下一步。
+- [x] 操作影响日志记录每次外部访问、写入范围、review 发现和修复。
+- [x] `go test ./...`、相关 race、`go vet ./...`、`go build ./cmd/...`、`git diff --check` 全部通过。
+- [x] 真实 `qwen:7b` 结构化提取通过。
+- [x] 真实 MySQL insert/update/noop/forget/evidence 通过。
+- [x] 真实 `bge-m3` 1024 维 embedding 和 Qdrant 用户隔离检索通过。
+- [x] 现有 `ollama_chat_memory` 和非测试数据未修改。
+- [x] 工作区干净；只 commit，不 push。

@@ -218,6 +218,31 @@
 
 目标结果：为父表建立 `(id, user_id)` 唯一键，并让 evidence 使用 `(memory_item_id, user_id)` 复合外键；通过 migration 更新已有表，而不是依赖 `CREATE TABLE IF NOT EXISTS`。
 
+### 6. MySQL outbox 与 Qdrant rebuild worker
+
+为什么需要：当前显式命令能同步 active/forgotten item，但进程在 MySQL commit 后、Qdrant upsert 前失败时，需要人工重跑；线上不能依赖双写同时成功。
+
+何时再做：memory retrieval 接入 `/chat`，或 memory 写入开始持续发生时。
+
+目标结果：MySQL 事务同时写 outbox，worker 按 item ID/version 幂等 upsert/delete；提供从 MySQL 全量重建新 collection 的命令，Qdrant 失败不回滚或覆盖 MySQL。
+
+### 7. 跨 key 语义去重
+
+为什么需要：`implementation_language`、`language`、`coding_language` 可能表达同一事实，当前确定性 identity 只能处理相同 kind/key。
+
+何时再做：积累真实 extraction key 分布，并完成 ontology/alias 基线后。
+
+目标结果：先用受控 alias 合并明确同义 key，再评估 embedding 辅助候选；不能仅凭相似度自动覆盖事实。
+
+### 8. Qdrant 索引漂移扫描与检索评估
+
+为什么需要：payload version 允许识别单条旧索引，但当前没有定时扫描缺失、多余或落后 point，也没有 Recall@K/阈值黄金样例。
+
+何时再做：memory retrieval 准备进入真实对话链路时。
+
+目标结果：按 user/item/version 对照 MySQL 与 Qdrant，输出可修复差异；建立正负查询集评估 Recall@K、跨用户隔离和 score 分布后再决定阈值。
+
+
 ---
 
 ## 后续主题如何追加

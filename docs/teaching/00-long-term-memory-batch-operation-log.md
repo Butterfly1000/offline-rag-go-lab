@@ -206,3 +206,51 @@
 - `go build ./cmd/...` 通过
 - `git diff --check` 和本次 diff 敏感信息扫描通过
 - 最终 Review：此前 P1/P2 findings 已修复，没有遗留的 Critical 或 Important 问题
+
+## 第 23 节：bge-m3 Embedding 与 Qdrant 用户隔离检索
+
+### RED/GREEN
+
+- embedding/Qdrant/demo 测试先因 `Embedder`、`QdrantIndexer`、`SearchResult` 和 demo helpers 不存在而编译 RED
+- 实现标准库 HTTP clients 和 demo 后 GREEN
+- collection 白名单测试先因 `validateDemoCollection` 不存在而 RED，改为只允许 `offline_rag_memory_items_v1` 后 GREEN
+
+### 测试环境问题
+
+- 沙箱内 `httptest.NewServer` 因回环端口 bind 被拒绝而 panic
+- 堆栈证明失败发生在 listener 创建，尚未进入 HTTP client 断言
+- 在允许本地回环监听的权限下重跑同一纯本地测试后通过
+- 未用真实外部服务替代单元测试，也未降低 request body/filter 断言
+
+### 外部写入与授权
+
+- 用户在执行前通过权限确认批准真实 MySQL/Ollama/Qdrant 实践
+- MySQL 只新增第二个固定测试用户的 1 条消息、1 条 active item 和 1 条 evidence
+- 创建 `offline_rag_memory_items_v1`：1024 维、Cosine
+- 创建 `user_id`、`kind` 两个 keyword payload index
+- upsert 两个测试用户各 1 个 active point；对 lesson 22 forgotten item ID 执行幂等 delete
+- 代码只允许专用 collection；现有 `ollama_chat_memory` 不读取 payload、不修改
+
+### 真实实践结果
+
+- bge-m3 批量 item embedding 与 query embedding 均为 1024 维
+- 第一个用户 top result 为 `project_fact/implementation_language`，score `0.634897`
+- 第二个相近文本用户拥有独立 top point，第一个用户结果不含第二用户
+- forgotten `temporary_tool` point 不存在
+- 重跑时第二 MySQL fixture action 为 NOOP，point ID 不变，检索结果不变
+- 新 collection 最终 2 points；旧 collection 仍为 384/Cosine、1 point
+
+### Review 发现与处理
+
+- 本地审查发现仅禁止旧 collection 仍可能误写其他已存在集合；新增 RED 测试并改成专用 collection 白名单
+- embedding 数量、维度、有限数，Qdrant payload user/item ID 和返回 kind/key/version 均做 Go 二次校验
+- Qdrant 错误不写回 MySQL；outbox/rebuild/drift scan 记录到 backlog
+
+### 验证与 Review
+
+- `go test ./...` 通过
+- `go test -race ./internal/memoryitem ./internal/recentchat ./cmd/memory-store-demo ./cmd/memory-qdrant-demo` 通过
+- `go vet ./...` 通过
+- `go build ./cmd/...` 通过
+- `gofmt -d`、staged/unstaged `git diff --check` 和敏感信息扫描通过
+- 最终本地 Review：HTTP 请求形状、user/kind filter、active/forgotten、专用 collection、MySQL 事实源和重跑幂等均符合设计，没有遗留 Critical 或 Important 问题

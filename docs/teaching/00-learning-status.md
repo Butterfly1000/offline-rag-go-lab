@@ -105,14 +105,16 @@
 
 当前学习位置已经不再是“概念层”，而是：
 
-**第 1 层 recent window 已经真实跑通，正在进入第 2 层：为什么要从按条数裁剪升级到更像生产版的记忆系统。**
+**第 1 层 recent window、第 2 层 token/session summary 和第 3 层 long-term memory 都已形成真实闭环，正在进入第 4 层 retrieval 合并。**
 
 也就是说，现在的自然断点是：
 
-- 第 1 层完成
-- 第 2 层刚开始
+- 第 1 层 recent window 完成
+- 第 2 层 token budget 与 session summary 完成
+- 第 3 层 memory item、MySQL、embedding 与 Qdrant 独立检索完成
+- 下一步是 memory retrieval 与 knowledge document retrieval 合并
 
-当前在第 2 层中插入 tokenizer 实战小课，已完成：
+第 2 层中的 tokenizer 实战已完成：
 
 1. tokenizer 启动时加载一次并重复编码
 2. 查看 `tokenizer.json` 的组件结构和词表规模
@@ -168,34 +170,58 @@ Session Summary 第 13-18 节已经完成真实闭环：
 - [recent-chat-session-summary-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-session-summary-sop.md:1)
 - [00-session-summary-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-session-summary-batch-operation-log.md:1)
 
+Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
+
+1. 定义五类 memory item、candidate、来源消息和 user/session 校验
+2. 用真实 `qwen:7b` 提取结构化候选，Go 再做 strict decode 与事实边界校验
+3. 用确定性 resolver 决定 INSERT、UPDATE、NOOP、FORGET 和恢复
+4. 用 MySQL 事务保存 item 与 evidence，验证 version、rollback 和重复运行
+5. 用真实 `bge-m3` 得到 1024 维 embedding
+6. 创建独立 1024/Cosine Qdrant collection 和 user/kind payload index
+7. 用两个语义相近的测试用户证明 `user_id` 隔离检索
+8. 删除 forgotten point，并证明旧 `ollama_chat_memory` 未修改
+
+文档：
+
+- [memory-item-validation-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-validation-sop.md:1)
+- [memory-item-extraction-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-extraction-sop.md:1)
+- [memory-item-resolution-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-resolution-sop.md:1)
+- [memory-item-store-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-store-sop.md:1)
+- [memory-item-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-qdrant-sop.md:1)
+- [00-long-term-memory-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-long-term-memory-batch-operation-log.md:1)
+
+当前明确边界：memory 检索已经能独立运行，但尚未自动注入 `/chat`，也尚未与知识文档 retrieval 合并。
+
 ---
 
 ## 4. 下一章是什么
 
 下一章应当从这里开始：
 
-### 第 3 层：Long-term Memory Item
+### 第 4 层：Memory Retrieval 与 Document Retrieval 合并
 
 核心问题：
 
-- session summary 是按会话连续压缩，不等于跨会话长期记忆
-- 哪些内容值得提取为 memory item：身份、偏好、项目事实、长期目标或约束
-- 如何分类、去重、更新、删除和记录来源
-- MySQL 结构化 store 与 Qdrant 语义召回各负责什么
+- 同一个用户问题什么时候查长期记忆，什么时候查知识文档
+- 两路结果如何保留来源、分别限额和统一排序
+- memory 的 user filter 与 document 的知识库/租户 filter 如何同时成立
+- summary、recent、memory、document 和当前问题如何共同参与 token budget
+- 检索失败时如何降级，不能让 Qdrant 故障破坏主回答或 MySQL 事实
 
 这一章推荐拆成下面几段：
 
-1. 明确 session summary 与 long-term memory 的行为边界
-2. 定义 memory item schema、生命周期和来源证据
-3. 用真实 Ollama 从消息/摘要提取候选项
-4. 在 MySQL 中完成确定性去重与更新
-5. 再把需要语义召回的 memory item embedding 到 Qdrant
+1. 先定义 memory/document 两类检索结果的统一结构和不同来源边界
+2. 实现独立并行召回，不先做复杂融合算法
+3. 定义确定性去重、限额和基础排序
+4. 把两类 context 接入现有 token budget
+5. 用真实 `/chat` 验证用户记忆、项目知识和 recent/summary 能共同工作
 
 已有概念入口文档：
 
-- [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
-- [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
-- [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
+- [memory-item-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-qdrant-sop.md:1)
+- [01-chat-behavior.md](/offline-rag-go-lab/docs/teaching/01-chat-behavior.md:1)
+- [02-ingest-behavior.md](/offline-rag-go-lab/docs/teaching/02-ingest-behavior.md:1)
+- [00-optimization-backlog.md](/offline-rag-go-lab/docs/teaching/00-optimization-backlog.md:1)
 
 ---
 
@@ -204,8 +230,8 @@ Session Summary 第 13-18 节已经完成真实闭环：
 建议后续按这个顺序继续：
 
 1. 第 2 层：session summary（已完成真实闭环）
-2. 第 3 层：memory item 提取、分类、去重、存储（下一章）
-3. 第 4 层：memory retrieval 和文档 retrieval 如何并存
+2. 第 3 层：memory item 提取、分类、MySQL、embedding、Qdrant（已完成独立真实闭环）
+3. 第 4 层：memory retrieval 和文档 retrieval 如何并存（下一章）
 4. 再回头补 chunking / retrieval 的生产级升级
 5. 最后做真正的升级实现
 
@@ -253,5 +279,11 @@ Session Summary 第 13-18 节已经完成真实闭环：
 7. [recent-window-layer-02c-session-summary.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02c-session-summary.md:1)
 8. [recent-chat-session-summary-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-session-summary-sop.md:1)
 9. [00-session-summary-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-session-summary-batch-operation-log.md:1)
+10. [memory-item-validation-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-validation-sop.md:1)
+11. [memory-item-extraction-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-extraction-sop.md:1)
+12. [memory-item-resolution-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-resolution-sop.md:1)
+13. [memory-item-store-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-store-sop.md:1)
+14. [memory-item-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-qdrant-sop.md:1)
+15. [00-long-term-memory-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-long-term-memory-batch-operation-log.md:1)
 
-然后确认 Session Summary 已完成第 13-18 节，不要重新实现 token 或 summary。下一次教学应先讨论“session summary 与 long-term memory item 的边界”，用户确认后再进入 memory item schema 和真实提取实践。
+然后确认 Session Summary 第 13-18 节和 Long-term Memory 第 19-23 节都已完成，不要重新实现 token、summary 或独立 memory store。下一次教学应先复习当前 Qdrant 检索的输入输出，再讨论 memory retrieval 与 knowledge document retrieval 的统一结果边界。
