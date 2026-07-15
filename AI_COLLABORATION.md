@@ -4,6 +4,9 @@
 
 这份文档放在根目录，是给“新接手的 AI”与“用户自己”共同使用的协作入口。
 
+新 AI 必须先阅读根目录的 [AI_INITIALIZATION.md](/offline-rag-go-lab/AI_INITIALIZATION.md:1)，
+完成环境、module 实际来源和 tokenizer 兼容边界检查后，再按本文档继续教学或实现。
+
 目标只有一个：
 
 - 不管是换模型、换设备、换会话，都能先读统一文档，再按同一套方式继续。
@@ -145,5 +148,5 @@
 如果你只想给新模型一句最短的要求，可以直接发：
 
 ```text
-先读 AI_COLLABORATION.md，再按其中要求去读 docs/teaching 里的文档；不要直接开讲，先告诉我当前学到哪、下一步讲什么、你会把什么写回文档。
+先读 AI_INITIALIZATION.md 和 AI_COLLABORATION.md，再按其中要求去读 docs/teaching 里的文档；不要直接开讲，先告诉我当前学到哪、下一步讲什么、你会把什么写回文档。
 ```
