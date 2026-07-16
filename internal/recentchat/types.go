@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"offline-rag-go-lab/internal/contextretrieval"
 	"offline-rag-go-lab/internal/sessionsummary"
 )
 
@@ -47,6 +48,12 @@ type ChatRequest struct {
 	StoreUserTurn      bool   `json:"store_user_turn"`
 	StoreAssistTurn    bool   `json:"store_assistant_turn"`
 	UseSessionSummary  bool   `json:"use_session_summary"`
+	UseMemory          bool   `json:"use_memory"`
+	UseKnowledge       bool   `json:"use_knowledge"`
+	KnowledgeScope     string `json:"knowledge_scope"`
+	MemoryLimit        int    `json:"memory_limit"`
+	DocumentLimit      int    `json:"document_limit"`
+	ContextTokenBudget int    `json:"context_token_budget"`
 }
 
 type ChatResponse struct {
@@ -67,6 +74,11 @@ type ChatResponse struct {
 	SessionSummaryVersion       int64                        `json:"session_summary_version"`
 	SessionSummaryWatermark     int64                        `json:"session_summary_watermark"`
 	SessionSummaryTriggerReason sessionsummary.TriggerReason `json:"session_summary_trigger_reason"`
+	RetrievedContext            []contextretrieval.Hit       `json:"retrieved_context"`
+	UsedMemoryItems             int                          `json:"used_memory_items"`
+	UsedDocumentChunks          int                          `json:"used_document_chunks"`
+	UsedContextTokens           int                          `json:"used_context_tokens"`
+	RetrievalWarnings           []string                     `json:"retrieval_warnings"`
 }
 
 func (r ChatRequest) Validate() error {
@@ -87,6 +99,22 @@ func (r ChatRequest) Validate() error {
 	}
 	if r.UseSessionSummary && !r.AutoTokenBudget {
 		return errors.New("use_session_summary requires auto_token_budget")
+	}
+	retrievalEnabled := r.UseMemory || r.UseKnowledge
+	if retrievalEnabled && !r.AutoTokenBudget {
+		return errors.New("retrieval requires auto_token_budget")
+	}
+	if r.UseMemory && r.MemoryLimit <= 0 {
+		return errors.New("memory_limit must be positive when use_memory is enabled")
+	}
+	if r.UseKnowledge && strings.TrimSpace(r.KnowledgeScope) == "" {
+		return errors.New("knowledge_scope is required when use_knowledge is enabled")
+	}
+	if r.UseKnowledge && r.DocumentLimit <= 0 {
+		return errors.New("document_limit must be positive when use_knowledge is enabled")
+	}
+	if retrievalEnabled && r.ContextTokenBudget <= 0 {
+		return errors.New("context_token_budget must be positive when retrieval is enabled")
 	}
 	return nil
 }

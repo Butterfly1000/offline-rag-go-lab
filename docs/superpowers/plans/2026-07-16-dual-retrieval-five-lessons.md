@@ -814,7 +814,7 @@ git commit -m "feat: merge and budget retrieved context"
 - Consumes: Task 26 DualRetriever and Task 27 merge/render/budget.
 - Produces: optional retrieval request fields, ChatContext, response observations and real service wiring.
 
-- [ ] **Step 1: Write request validation RED tests**
+- [x] **Step 1: Write request validation RED tests**
 
 Add fields:
 
@@ -835,7 +835,7 @@ Validation rules:
 - any enabled source requires context_token_budget > 0
 - disabled old requests remain valid without the new fields
 
-- [ ] **Step 2: Write service RED tests**
+- [x] **Step 2: Write service RED tests**
 
 Add:
 
@@ -864,7 +864,7 @@ Tests prove:
 - summary combines base system, retrieved block and summary exactly once
 - context selection reducing fixed capacity reduces available recent tokens
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 ```bash
 go test ./internal/recentchat -run 'Test(ChatRequestRetrieval|ServiceRetrieval)'
@@ -872,7 +872,7 @@ go test ./internal/recentchat -run 'Test(ChatRequestRetrieval|ServiceRetrieval)'
 
 Expected: FAIL because request fields, interface and ChatContext do not exist.
 
-- [ ] **Step 4: Implement request and response observations**
+- [x] **Step 4: Implement request and response observations**
 
 Add response fields:
 
@@ -901,7 +901,7 @@ Change the HTTP handler to call:
 resp, err := svc.ChatContext(r.Context(), req)
 ```
 
-- [ ] **Step 5: Wire real clients in cmd/recent-chat**
+- [x] **Step 5: Wire real clients in cmd/recent-chat**
 
 Read existing config keys with defaults:
 
@@ -927,7 +927,7 @@ service = recentchat.NewServiceWithContextRetrieval(service, dual)
 Startup must not create collections or write points. Collection creation remains
 the explicit lesson 25 demo.
 
-- [ ] **Step 6: Run GREEN and targeted race tests**
+- [x] **Step 6: Run GREEN and targeted race tests**
 
 ```bash
 go test ./internal/recentchat ./internal/contextretrieval ./internal/memoryitem
@@ -936,7 +936,7 @@ go test -race ./internal/recentchat ./internal/contextretrieval ./internal/memor
 
 Expected: PASS.
 
-- [ ] **Step 7: Start service and run real curl verification**
+- [x] **Step 7: Start service and run real curl verification**
 
 Start:
 
@@ -976,7 +976,7 @@ Run a wrong-scope request and verify used_document_chunks is zero while chat sti
 returns an answer. Run with an unavailable document collection through a temporary
 ignored config and verify a document warning while memory and chat still work.
 
-- [ ] **Step 8: Write final SOP and update handoff state**
+- [x] **Step 8: Write final SOP and update handoff state**
 
 The SOP explains the full order:
 
@@ -998,7 +998,7 @@ chunking/document ingestion and retrieval evaluation.
 
 Update handoff minimum-reading list with the five new SOPs.
 
-- [ ] **Step 9: Final review and complete verification**
+- [x] **Step 9: Final review and complete verification**
 
 ```bash
 gofmt -w internal/contextretrieval/*.go internal/memoryitem/*.go internal/recentchat/*.go cmd/recent-chat/*.go
@@ -1020,7 +1020,7 @@ git log --oneline -8
 Confirm no real DSN, credential, vector payload dump, full machine path or old
 collection mutation appears in tracked changes.
 
-- [ ] **Step 10: Commit lesson 28**
+- [x] **Step 10: Commit lesson 28**
 
 ```bash
 git add internal/contextretrieval internal/recentchat cmd/recent-chat config/recent-chat.env.example docs/teaching/recent-chat-dual-retrieval-sop.md docs/teaching/00-dual-retrieval-batch-operation-log.md docs/teaching/00-learning-status.md docs/teaching/00-handoff-guide.md

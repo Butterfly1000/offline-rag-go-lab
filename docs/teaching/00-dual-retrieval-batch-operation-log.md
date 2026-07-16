@@ -285,3 +285,65 @@ API 尚不存在。
 
 独立 review 代理超时且没有返回结果，已关闭。未因此跳过测试、race、vet、build、
 格式和 diff 门禁。
+
+## 第 28 节：Dual Retrieval 接入真实 Recent Chat
+
+### 影响分析
+
+本节修改 recent-chat 请求/响应与服务编排，注入真实 Ollama/Qdrant 客户端，新增服务
+测试和最终 SOP，并更新学习/交接状态。
+
+外部状态：
+
+- 正常验证只读查询两个 Qdrant collection
+- 专用 session `dual-retrieval-chat-stored-003` 成功写入一条 user 与一条 assistant 消息
+- 不创建、修改或删除 Qdrant point/collection
+- 不修改 `ollama_chat_memory`
+- 临时错误 collection 只用于 GET/query，未创建；本机配置已恢复
+
+### RED 证据
+
+命令：
+
+    go test ./internal/recentchat -run 'Test(ChatRequestRetrieval|ServiceRetrieval)'
+
+修复测试自身 composite literal 语法后，有效 RED 因 `ChatRequest` 新字段、
+`NewServiceWithContextRetrieval` 和 `ChatContext` 不存在而 FAIL。
+
+### GREEN 证据
+
+命令：
+
+    go test ./internal/recentchat ./internal/contextretrieval ./internal/memoryitem
+    go test -race ./internal/recentchat ./internal/contextretrieval ./internal/memoryitem
+
+结果：PASS。旧 recentchat 全包回归也通过。
+
+### 真实正常链路
+
+使用本地 MySQL、qwen:7b、bge-m3 和两个 Qdrant collection。实际：
+
+- memory=1，document=2
+- retrieved context=330/512 tokens
+- warning=0，answer 非空
+- 同 session 后续请求读取 `used_messages=2`，确认 user/assistant 已写 MySQL
+
+原计划 512 output reserve 的首次请求没有在可观测时间内取得响应；本机 qwen 弱模型
+验证改为 128 output reserve，retrieval context budget 保持 512，约 21 秒完成。
+
+### Scope 与故障隔离
+
+- `missing-course`：memory=1、document=0、warning=0、answer=Go
+- 不存在 document collection：memory=1、document=0、document warning=1、answer=Go
+- 测试后两个服务进程已停止，配置恢复正常 document collection
+
+### Review 重点
+
+最终 review 检查旧请求兼容、request context 透传、fixed input 先包含 retrieval、summary
+只组合一次、service ownership 二次校验、warning/hard failure 分界、Ollama 前失败不写消息、
+启动无 collection 写操作和响应不暴露向量。
+
+Review 补强：把 service ownership 测试扩展为跨 user 与跨 knowledge scope 两种情况，
+均确认 Ollama 调用数为 0；同时修正 handoff guide 遗留的不便移植的本机绝对路径。
+
+独立 review 代理超时且无返回结果，已关闭；最终全量门禁与完成审计不因此省略。

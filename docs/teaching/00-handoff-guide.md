@@ -23,16 +23,16 @@
 先让它读取这些文档：
 
 1. [AI_INITIALIZATION.md](/offline-rag-go-lab/AI_INITIALIZATION.md:1)
-2. [00-teaching-protocol.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-teaching-protocol.md:1)
-3. [00-learning-status.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
-4. [recent-window-layer-01.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
-5. [recent-window-runtime-sop.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
-6. [recent-window-layer-02-count-distortion.md](/Users/huangyanyu/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
+2. [00-teaching-protocol.md](/offline-rag-go-lab/docs/teaching/00-teaching-protocol.md:1)
+3. [00-learning-status.md](/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
+4. [recent-window-layer-01.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
+5. [recent-window-runtime-sop.md](/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
+6. [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
 7. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
 
 如果新模型要继续 recent-chat 的代码实现，也要让它读：
 
-7. [2026-06-29-recent-window-real-implementation-plan.md](/Users/huangyanyu/offline-rag-go-lab/docs/2026-06-29-recent-window-real-implementation-plan.md:1)
+7. [2026-06-29-recent-window-real-implementation-plan.md](/offline-rag-go-lab/docs/2026-06-29-recent-window-real-implementation-plan.md:1)
 
 ---
 
@@ -58,6 +58,21 @@
 - 先从当前 learning-status 记录的下一章开始，不要重新从项目总览讲起
 - 如果继续做实现或验证，也要把运行结果和结论同步沉淀到 docs/teaching
 ```
+
+### Dual Retrieval 第 24-28 节接手补充
+
+如果要继续当前最新教学或实现，最少再读：
+
+1. [context-hit-boundary-sop.md](/offline-rag-go-lab/docs/teaching/context-hit-boundary-sop.md:1)
+2. [document-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/document-qdrant-sop.md:1)
+3. [dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/dual-retrieval-sop.md:1)
+4. [context-merge-budget-sop.md](/offline-rag-go-lab/docs/teaching/context-merge-budget-sop.md:1)
+5. [recent-chat-dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-dual-retrieval-sop.md:1)
+6. [00-dual-retrieval-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-dual-retrieval-batch-operation-log.md:1)
+
+接手模型必须区分：第 24-28 节已经实现和机器验证，但用户尚未逐节确认学会。继续教学
+应按“先实践效果，再沿代码解释”的方式从第 24 节开始；继续实现则进入生产级 document
+ingestion/chunking 与 retrieval evaluation，不重复实现 dual retrieval。
 
 ---
 

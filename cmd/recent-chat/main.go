@@ -9,7 +9,9 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"offline-rag-go-lab/internal/chatprompt"
+	"offline-rag-go-lab/internal/contextretrieval"
 	"offline-rag-go-lab/internal/fileconfig"
+	"offline-rag-go-lab/internal/memoryitem"
 	"offline-rag-go-lab/internal/promptbudget"
 	"offline-rag-go-lab/internal/recentchat"
 	"offline-rag-go-lab/internal/sessionsummary"
@@ -46,7 +48,8 @@ func main() {
 	}
 
 	formatter := chatprompt.QwenFormatter{}
-	ollama := recentchat.NewHTTPOllamaClient(valueOrDefault(values, "OLLAMA_BASE_URL", "http://127.0.0.1:11434"))
+	ollamaBaseURL := valueOrDefault(values, "OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+	ollama := recentchat.NewHTTPOllamaClient(ollamaBaseURL)
 	automaticBudget := promptbudget.NewAutomaticPlanner(
 		ollama,
 		chatprompt.NewTokenCounter(tokenCounter, formatter),
@@ -82,6 +85,21 @@ func main() {
 		summaryInputReserve,
 		summaryOutputLimit,
 	)
+	embedder := memoryitem.NewHTTPOllamaEmbedder(ollamaBaseURL)
+	memorySearch := contextretrieval.NewMemoryQdrantSearcher(memoryitem.NewQdrantIndexer(
+		valueOrDefault(values, "QDRANT_BASE_URL", "http://127.0.0.1:6333"),
+		valueOrDefault(values, "QDRANT_MEMORY_COLLECTION", "offline_rag_memory_items_v1"),
+	))
+	documentSearch := contextretrieval.NewDocumentQdrant(
+		valueOrDefault(values, "QDRANT_BASE_URL", "http://127.0.0.1:6333"),
+		valueOrDefault(values, "QDRANT_DOCUMENT_COLLECTION", "offline_rag_document_chunks_v1"),
+	)
+	service = recentchat.NewServiceWithContextRetrieval(service, contextretrieval.NewDualRetriever(
+		embedder,
+		valueOrDefault(values, "OLLAMA_EMBED_MODEL", "bge-m3"),
+		memorySearch,
+		documentSearch,
+	))
 
 	mux := http.NewServeMux()
 	recentchat.RegisterHandlers(mux, service)

@@ -190,7 +190,30 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 - [memory-item-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-qdrant-sop.md:1)
 - [00-long-term-memory-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-long-term-memory-batch-operation-log.md:1)
 
-当前明确边界：memory 检索已经能独立运行，但尚未自动注入 `/chat`，也尚未与知识文档 retrieval 合并。
+### 已实现并验证、尚未确认学会：第 24-28 节 Dual Retrieval
+
+实现状态：
+
+1. 统一 memory/document Hit 与不同 ownership 边界
+2. 创建真实 document Qdrant collection，按 `knowledge_scope` 检索并返回后重验
+3. 一个 query 只 embedding 一次，并行检索 memory 与 document
+4. 基础设施失败可 warning 降级，ownership/畸形数据硬失败
+5. 两路独立排序和 quota，memory 优先精确去重
+6. 安全渲染 retrieved context，并用真实 tokenizer 精确控制子预算
+7. 接入真实 `/chat`，与 recent window、Ollama 和 MySQL 消息写入共同运行
+
+真实验证：memory=1、document=2、retrieval context=330/512 tokens；同 session 后续读取
+到两条已写消息；不存在 scope 时 document=0；document collection 故障时 warning 降级。
+
+文档：
+
+- [context-hit-boundary-sop.md](/offline-rag-go-lab/docs/teaching/context-hit-boundary-sop.md:1)
+- [document-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/document-qdrant-sop.md:1)
+- [dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/dual-retrieval-sop.md:1)
+- [context-merge-budget-sop.md](/offline-rag-go-lab/docs/teaching/context-merge-budget-sop.md:1)
+- [recent-chat-dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-dual-retrieval-sop.md:1)
+
+注意：以上只代表代码已实现和机器已验证。用户尚未逐节确认“懂了”，不能记录为已学会。
 
 ---
 
@@ -198,23 +221,23 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 下一章应当从这里开始：
 
-### 第 4 层：Memory Retrieval 与 Document Retrieval 合并
+### 下一实现章：生产级 Document Ingestion、Chunking 与 Retrieval Evaluation
 
-核心问题：
+第 24-28 节的合并框架已经实现。下一步不再重复融合编排，而是补齐文档来源侧：
 
-- 同一个用户问题什么时候查长期记忆，什么时候查知识文档
-- 两路结果如何保留来源、分别限额和统一排序
-- memory 的 user filter 与 document 的知识库/租户 filter 如何同时成立
-- summary、recent、memory、document 和当前问题如何共同参与 token budget
-- 检索失败时如何降级，不能让 Qdrant 故障破坏主回答或 MySQL 事实
+- 真实文件解析、标题/段落/代码结构识别和稳定 chunk ID
+- ingestion worker、批量 embedding、文档版本更新与旧 chunk 删除
+- collection alias 全量重建与模型/维度迁移
+- 正负查询集、Recall@K、跨 scope 隔离和引用质量评估
+- 基于评估再决定 chunk 大小、overlap、reranker、score calibration 和动态 quota
 
 这一章推荐拆成下面几段：
 
-1. 先定义 memory/document 两类检索结果的统一结构和不同来源边界
-2. 实现独立并行召回，不先做复杂融合算法
-3. 定义确定性去重、限额和基础排序
-4. 把两类 context 接入现有 token budget
-5. 用真实 `/chat` 验证用户记忆、项目知识和 recent/summary 能共同工作
+1. 定义生产文档 record、版本、source scope 和稳定 chunk identity
+2. 实现 Markdown/代码的结构化 chunking 与可运行 ingestion SOP
+3. 实现幂等更新、删除、失败重试和 alias rebuild
+4. 建立 retrieval 黄金查询与隔离测试集
+5. 用评估结果迭代 chunking、quota 和 reranking
 
 已有概念入口文档：
 
@@ -231,8 +254,8 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 1. 第 2 层：session summary（已完成真实闭环）
 2. 第 3 层：memory item 提取、分类、MySQL、embedding、Qdrant（已完成独立真实闭环）
-3. 第 4 层：memory retrieval 和文档 retrieval 如何并存（下一章）
-4. 再回头补 chunking / retrieval 的生产级升级
+3. 第 4 层：memory retrieval 和文档 retrieval 如何并存（已实现验证，待用户学习确认）
+4. 生产级 chunking / document ingestion 与 retrieval evaluation（下一章）
 5. 最后做真正的升级实现
 
 ---
@@ -286,4 +309,12 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 14. [memory-item-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/memory-item-qdrant-sop.md:1)
 15. [00-long-term-memory-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-long-term-memory-batch-operation-log.md:1)
 
-然后确认 Session Summary 第 13-18 节和 Long-term Memory 第 19-23 节都已完成，不要重新实现 token、summary 或独立 memory store。下一次教学应先复习当前 Qdrant 检索的输入输出，再讨论 memory retrieval 与 knowledge document retrieval 的统一结果边界。
+16. [context-hit-boundary-sop.md](/offline-rag-go-lab/docs/teaching/context-hit-boundary-sop.md:1)
+17. [document-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/document-qdrant-sop.md:1)
+18. [dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/dual-retrieval-sop.md:1)
+19. [context-merge-budget-sop.md](/offline-rag-go-lab/docs/teaching/context-merge-budget-sop.md:1)
+20. [recent-chat-dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-dual-retrieval-sop.md:1)
+
+然后确认第 13-23 节已完成闭环，第 24-28 节已实现验证但尚未由用户确认学会。下一次
+教学应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”；下一实现章
+才是生产级 document ingestion/chunking 与 retrieval evaluation。

@@ -85,7 +85,7 @@ func RegisterHandlers(mux *http.ServeMux, svc Service) {
 			return
 		}
 
-		resp, err := svc.Chat(req)
+		resp, err := svc.ChatContext(r.Context(), req)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return

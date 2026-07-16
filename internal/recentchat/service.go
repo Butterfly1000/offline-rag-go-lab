@@ -1,11 +1,14 @@
 package recentchat
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"offline-rag-go-lab/internal/chatprompt"
+	"offline-rag-go-lab/internal/contextretrieval"
 	"offline-rag-go-lab/internal/promptbudget"
 	"offline-rag-go-lab/internal/sessionsummary"
 )
@@ -24,6 +27,10 @@ type SessionSummaryReader interface {
 	Get(sessionID, userID string) (sessionsummary.SessionSummary, bool, error)
 }
 
+type ContextRetriever interface {
+	Retrieve(ctx context.Context, req contextretrieval.DualRequest) (contextretrieval.DualResult, error)
+}
+
 type Service struct {
 	store               MessageStore
 	window              RecentWindowBuilder
@@ -34,10 +41,17 @@ type Service struct {
 	summaryReader       SessionSummaryReader
 	summaryInputReserve int
 	summaryOutputLimit  int
+	contextRetriever    ContextRetriever
 	nowFunc             func() time.Time
 }
 
 func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
+	return s.ChatContext(context.Background(), req)
+}
+
+// ChatContext keeps the historical Chat API while allowing HTTP cancellation
+// to reach retrieval I/O.
+func (s Service) ChatContext(ctx context.Context, req ChatRequest) (ChatResponse, error) {
 	if err := req.Validate(); err != nil {
 		return ChatResponse{}, err
 	}
@@ -53,6 +67,49 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 	if s.nowFunc == nil {
 		s.nowFunc = time.Now
 	}
+	if req.AutoTokenBudget {
+		if s.automaticBudget == nil {
+			return ChatResponse{}, errors.New("automatic budget planner is required for auto_token_budget")
+		}
+		if !s.tokenWindow.strict {
+			return ChatResponse{}, errors.New("strict token window is required for auto_token_budget")
+		}
+		if s.tokenWindow.counter == nil {
+			return ChatResponse{}, errors.New("token counter is required for auto_token_budget")
+		}
+	}
+
+	systemPrompt := req.SystemPrompt
+	contextSelection := contextretrieval.ContextSelection{}
+	retrievalWarnings := []string(nil)
+	if req.UseMemory || req.UseKnowledge {
+		if s.contextRetriever == nil {
+			return ChatResponse{}, errors.New("context retriever is required when retrieval is enabled")
+		}
+		retrieved, err := s.contextRetriever.Retrieve(ctx, contextretrieval.DualRequest{
+			Query: req.Message, UserID: req.UserID, KnowledgeScope: req.KnowledgeScope,
+			UseMemory: req.UseMemory, UseDocuments: req.UseKnowledge,
+			MemoryLimit: req.MemoryLimit, DocumentLimit: req.DocumentLimit,
+		})
+		if err != nil {
+			return ChatResponse{}, err
+		}
+		if err := validateRetrievedOwnership(retrieved, req.UserID, req.KnowledgeScope); err != nil {
+			return ChatResponse{}, err
+		}
+		merged, err := contextretrieval.Merge(retrieved.MemoryHits, retrieved.DocumentHits, contextretrieval.MergeLimits{
+			Memory: req.MemoryLimit, Documents: req.DocumentLimit,
+		})
+		if err != nil {
+			return ChatResponse{}, err
+		}
+		contextSelection, err = contextretrieval.SelectWithinTokenBudget(merged, req.ContextTokenBudget, s.tokenWindow.counter)
+		if err != nil {
+			return ChatResponse{}, err
+		}
+		systemPrompt = combineSystemPrompt(systemPrompt, contextSelection.Rendered)
+		retrievalWarnings = append([]string(nil), retrieved.Warnings...)
+	}
 
 	budgetMode := BudgetModeCount
 	historyBudget := req.RecentTokenBudget
@@ -61,16 +118,9 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		budgetMode = BudgetModeManual
 	}
 	if req.AutoTokenBudget {
-		if s.automaticBudget == nil {
-			return ChatResponse{}, errors.New("automatic budget planner is required for auto_token_budget")
-		}
-		if !s.tokenWindow.strict {
-			return ChatResponse{}, errors.New("strict token window is required for auto_token_budget")
-		}
-
 		fixed := make([]chatprompt.Message, 0, 2)
-		if req.SystemPrompt != "" {
-			fixed = append(fixed, chatprompt.Message{Role: string(RoleSystem), Content: req.SystemPrompt})
+		if systemPrompt != "" {
+			fixed = append(fixed, chatprompt.Message{Role: string(RoleSystem), Content: systemPrompt})
 		}
 		fixed = append(fixed, chatprompt.Message{Role: string(RoleUser), Content: req.Message})
 
@@ -119,7 +169,6 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		}
 	}
 
-	systemPrompt := req.SystemPrompt
 	summaryUsed := false
 	summaryUpdated := false
 	summaryVersion := int64(0)
@@ -178,7 +227,7 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 				)
 			}
 
-			systemPrompt = combineSystemPrompt(req.SystemPrompt, block)
+			systemPrompt = combineSystemPrompt(systemPrompt, block)
 			fixed := []chatprompt.Message{{Role: string(RoleSystem), Content: systemPrompt}}
 			fixed = append(fixed, chatprompt.Message{Role: string(RoleUser), Content: req.Message})
 			finalPlan, err := s.automaticBudget.Plan(req.Model, fixed, req.OutputTokenReserve)
@@ -271,7 +320,51 @@ func (s Service) Chat(req ChatRequest) (ChatResponse, error) {
 		SessionSummaryVersion:       summaryVersion,
 		SessionSummaryWatermark:     summaryWatermark,
 		SessionSummaryTriggerReason: summaryReason,
+		RetrievedContext:            contextSelection.Hits,
+		UsedMemoryItems:             countRetrievedSource(contextSelection.Hits, contextretrieval.SourceMemory),
+		UsedDocumentChunks:          countRetrievedSource(contextSelection.Hits, contextretrieval.SourceDocument),
+		UsedContextTokens:           contextSelection.UsedTokens,
+		RetrievalWarnings:           retrievalWarnings,
 	}, nil
+}
+
+func NewServiceWithContextRetrieval(base Service, retriever ContextRetriever) Service {
+	base.contextRetriever = retriever
+	return base
+}
+
+func validateRetrievedOwnership(result contextretrieval.DualResult, userID, scope string) error {
+	userID = strings.TrimSpace(userID)
+	scope = strings.TrimSpace(scope)
+	for index, hit := range result.MemoryHits {
+		validated, err := contextretrieval.ValidateHit(hit)
+		if err != nil {
+			return contextretrieval.IntegrityFailure(contextretrieval.SourceMemory, fmt.Errorf("validate memory hit %d: %w", index, err))
+		}
+		if validated.Source != contextretrieval.SourceMemory || validated.UserID != userID {
+			return contextretrieval.IntegrityFailure(contextretrieval.SourceMemory, fmt.Errorf("memory hit %d belongs to user %q, want %q", index, validated.UserID, userID))
+		}
+	}
+	for index, hit := range result.DocumentHits {
+		validated, err := contextretrieval.ValidateHit(hit)
+		if err != nil {
+			return contextretrieval.IntegrityFailure(contextretrieval.SourceDocument, fmt.Errorf("validate document hit %d: %w", index, err))
+		}
+		if validated.Source != contextretrieval.SourceDocument || validated.KnowledgeScope != scope {
+			return contextretrieval.IntegrityFailure(contextretrieval.SourceDocument, fmt.Errorf("document hit %d belongs to knowledge_scope %q, want %q", index, validated.KnowledgeScope, scope))
+		}
+	}
+	return nil
+}
+
+func countRetrievedSource(hits []contextretrieval.Hit, source contextretrieval.Source) int {
+	count := 0
+	for _, hit := range hits {
+		if hit.Source == source {
+			count++
+		}
+	}
+	return count
 }
 
 func (s Service) validateSessionSummaryMode() error {
