@@ -224,3 +224,64 @@ Review 确认 adapter 和 document client 已检查 ownership，但 orchestrator
 
 最终 `go vet ./...` 发现测试使用了 Go 1.24 新增的 `testing.T.Context()`，而模块声明
 兼容 Go 1.23。修复为 `context.Background()`，保持项目模块版本不变；重新 vet 通过。
+
+## 第 27 节：确定性合并、安全渲染与精确 Token 预算
+
+### 影响分析
+
+本节新增纯 Go 合并、渲染、预算代码、单元测试、真实 tokenizer demo、SOP，并更新
+优化 backlog。
+
+运行时只读取 `RECENT_CHAT_TOKENIZER_PATH` 指向的本地 tokenizer 资产。不连接或写入
+MySQL、Ollama、Qdrant，也不访问外部网络。
+
+### RED 证据
+
+命令：
+
+    go test ./internal/contextretrieval -run 'Test(Merge|RenderContext|SelectWithin)'
+
+结果：FAIL。失败原因是 `Merge`、`RenderContext`、`SelectWithinTokenBudget` 等目标
+API 尚不存在。
+
+### GREEN 证据
+
+命令：
+
+    go test ./internal/contextretrieval
+
+结果：PASS。最终 race 与全量门禁在本节提交前执行。
+
+### 实践行为
+
+命令：
+
+    go run ./cmd/context-merge-demo --config config/recent-chat.env --context-token-budget 160
+
+本机被忽略的 `config/recent-chat.env` 最初缺少 `RECENT_CHAT_TOKENIZER_PATH`，demo
+明确报错退出。确认本地资产存在后只补本机配置，不提交该文件。
+
+实际输出：
+
+    Memory candidates: 2
+    Document candidates: 4
+    Duplicate removed: true
+    Merged source order: memory,document,document,document
+    Selected source order: memory,document
+    Dropped IDs: document:oversized,document:recent-window
+    Used context tokens: 129
+    Within budget: true
+    Rendered retrieved_context:
+    <retrieved_context>...</retrieved_context>
+
+实践证明超长 `document:oversized` 被跳过后，后续较小 `document:token-budget` 仍能
+进入预算；最终块由真实 qwen tokenizer 计为 129/160 tokens。
+
+### Review 结论
+
+本地 review 确认：两路只在各自来源内按 score 排序；ID 提供稳定同分顺序；去重只
+针对已保留内容；输入 slice 与 Metadata 不被修改；标签属性和正文均转义；预算计算
+完整渲染块并复验最终计数。
+
+独立 review 代理超时且没有返回结果，已关闭。未因此跳过测试、race、vet、build、
+格式和 diff 门禁。

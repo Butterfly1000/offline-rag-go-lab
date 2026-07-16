@@ -636,7 +636,7 @@ git commit -m "feat: retrieve memory and documents in parallel"
 - Consumes: Task 26 DualResult and Task 24 validated Hit.
 - Produces: `Merge`, `RenderContext`, `SelectWithinTokenBudget`, `ContextSelection`.
 
-- [ ] **Step 1: Write deterministic merge RED tests**
+- [x] **Step 1: Write deterministic merge RED tests**
 
 Use:
 
@@ -662,7 +662,7 @@ strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(content)), " "))
 If a document duplicates retained memory content, retain memory and drop the
 document. Empty/invalid hits return errors.
 
-- [ ] **Step 2: Write safe rendering RED tests**
+- [x] **Step 2: Write safe rendering RED tests**
 
 Use:
 
@@ -677,7 +677,7 @@ content/title/source are HTML-escaped and cannot close structural tags.
 Each memory element includes ID, kind and content. Each document includes ID,
 title, source_ref and content.
 
-- [ ] **Step 3: Write exact budget RED tests**
+- [x] **Step 3: Write exact budget RED tests**
 
 Use:
 
@@ -709,7 +709,7 @@ Tests use a deterministic fake counter and prove:
 - tokenizer errors propagate
 - empty candidates produce an empty selection with zero tokens
 
-- [ ] **Step 4: Run RED**
+- [x] **Step 4: Run RED**
 
 ```bash
 go test ./internal/contextretrieval -run 'Test(Merge|RenderContext|SelectWithin)'
@@ -717,7 +717,7 @@ go test ./internal/contextretrieval -run 'Test(Merge|RenderContext|SelectWithin)
 
 Expected: FAIL because merge, renderer and budgeter do not exist.
 
-- [ ] **Step 5: Implement merge, renderer and budgeter**
+- [x] **Step 5: Implement merge, renderer and budgeter**
 
 Do not mutate caller slices or Metadata maps. For each candidate:
 
@@ -731,7 +731,7 @@ After selection, render and count the final block once more. If the final count
 differs from the last retained tentative count, return an error because the
 counter must be deterministic.
 
-- [ ] **Step 6: Run GREEN**
+- [x] **Step 6: Run GREEN**
 
 ```bash
 go test ./internal/contextretrieval
@@ -740,7 +740,7 @@ go test -race ./internal/contextretrieval
 
 Expected: PASS.
 
-- [ ] **Step 7: Add and run the merge/budget practice**
+- [x] **Step 7: Add and run the merge/budget practice**
 
 The command loads the real tokenizer, uses fixed memory/document hits including
 one duplicate and one oversized hit, then prints merge and budget observations.
@@ -765,7 +765,7 @@ Within budget: true
 Rendered retrieved_context:
 ```
 
-- [ ] **Step 8: Write SOP and production backlog**
+- [x] **Step 8: Write SOP and production backlog**
 
 Explain why raw scores from separate collections are not globally compared,
 why quotas are deterministic, how dedupe precedence works, why complete block
@@ -773,7 +773,7 @@ rendering is counted and how prompt injection boundaries work.
 
 Add deferred reranking, score calibration and dynamic quotas to the backlog.
 
-- [ ] **Step 9: Review and verify**
+- [x] **Step 9: Review and verify**
 
 ```bash
 gofmt -w internal/contextretrieval/*.go cmd/context-merge-demo/*.go
@@ -787,7 +787,7 @@ git diff --check
 Review deterministic ordering, non-mutation, escaping, exact token count and
 oversized-hit behavior.
 
-- [ ] **Step 10: Commit lesson 27**
+- [x] **Step 10: Commit lesson 27**
 
 ```bash
 git add internal/contextretrieval cmd/context-merge-demo docs/teaching/context-merge-budget-sop.md docs/teaching/00-dual-retrieval-batch-operation-log.md docs/teaching/00-optimization-backlog.md

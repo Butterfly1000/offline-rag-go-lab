@@ -242,6 +242,32 @@
 
 目标结果：按 user/item/version 对照 MySQL 与 Qdrant，输出可修复差异；建立正负查询集评估 Recall@K、跨用户隔离和 score 分布后再决定阈值。
 
+## Dual Retrieval 优化项
+
+### 1. 跨来源 Reranker
+
+为什么需要：当前 memory 与 document 使用独立排序和固定 quota，不假设两个 collection 的 raw score 已校准；它稳定可解释，但未学习“对当前问题哪一条更有用”。
+
+何时再做：积累包含问题、候选和人工相关性标签的评估集后。
+
+目标结果：用统一 reranker 对已隔离、已校验的候选重排，并对比无 reranker 基线的 Recall/NDCG 与延迟；没有评估数据前不引入额外模型复杂度。
+
+### 2. Score Calibration
+
+为什么需要：不同 collection 的 score 分布会随文本长度、数据密度和索引内容变化，数值相同不代表相关性相同。
+
+何时再做：获得两路真实 score 分布和正负样例后。
+
+目标结果：按来源校准为可比较概率或等级，并持续监控数据漂移；不能只写固定乘法权重。
+
+### 3. 动态 Quota
+
+为什么需要：固定 memory/document 配额容易理解，但纯知识问题可能不需要 memory，强个性化问题可能更依赖 memory。
+
+何时再做：能按问题类型评估回答质量和 token 成本后。
+
+目标结果：在总候选和 token 预算内动态分配来源配额，同时保留最小/最大边界、确定性 fallback 和可观测决策原因。
+
 
 ---
 
