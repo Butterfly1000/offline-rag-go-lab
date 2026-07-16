@@ -43,7 +43,7 @@
 - Consumes: no runtime dependency; this task defines the shared retrieval domain.
 - Produces: `Source`, `Hit`, `ValidateHit`, `SourceError`, `InfrastructureFailure`, `IntegrityFailure`, `IsInfrastructureFailure`.
 
-- [ ] **Step 1: Write failing ownership and error-classification tests**
+- [x] **Step 1: Write failing ownership and error-classification tests**
 
 Create table tests with these exact cases:
 
@@ -82,7 +82,7 @@ integrity := IntegrityFailure(SourceDocument, errors.New("wrong scope"))
 if IsInfrastructureFailure(integrity) { t.Fatal("integrity must remain hard") }
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -92,7 +92,7 @@ go test ./internal/contextretrieval -run 'Test(ValidateHit|SourceError)'
 
 Expected: FAIL because the package and types do not exist.
 
-- [ ] **Step 3: Implement the domain and typed failures**
+- [x] **Step 3: Implement the domain and typed failures**
 
 Use these exact public shapes:
 
@@ -158,7 +158,7 @@ func IntegrityFailure(source Source, err error) error
 func IsInfrastructureFailure(err error) bool
 ```
 
-- [ ] **Step 4: Run GREEN and package race test**
+- [x] **Step 4: Run GREEN and package race test**
 
 Run:
 
@@ -169,7 +169,7 @@ go test -race ./internal/contextretrieval
 
 Expected: PASS.
 
-- [ ] **Step 5: Add and run the pure Go practice command**
+- [x] **Step 5: Add and run the pure Go practice command**
 
 The demo constructs one memory hit, one document hit and one mixed hit.
 
@@ -187,7 +187,7 @@ Valid document: source=document knowledge_scope=offline-rag-course
 Rejected mixed ownership: memory hit must not carry knowledge_scope
 ```
 
-- [ ] **Step 6: Write the lesson SOP and operation log**
+- [x] **Step 6: Write the lesson SOP and operation log**
 
 The SOP explains:
 
@@ -199,7 +199,7 @@ The SOP explains:
 
 The operation log records no MySQL, Ollama or Qdrant access.
 
-- [ ] **Step 7: Review and verify**
+- [x] **Step 7: Review and verify**
 
 Run:
 
@@ -214,7 +214,7 @@ git diff --check
 
 Review the diff for source ownership, copied maps, finite scores, comments and full machine paths.
 
-- [ ] **Step 8: Commit lesson 24**
+- [x] **Step 8: Commit lesson 24**
 
 ```bash
 git add internal/contextretrieval cmd/context-hit-demo docs/teaching/context-hit-boundary-sop.md docs/teaching/00-dual-retrieval-batch-operation-log.md
