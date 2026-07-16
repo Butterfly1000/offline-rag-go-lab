@@ -436,7 +436,7 @@ git commit -m "feat: index and search document chunks"
 - Consumes: Task 25 DocumentQdrant; existing memoryitem Embedder, QdrantIndexer and SearchResult.
 - Produces: `MemoryQdrantSearcher`, `DualRequest`, `DualResult`, `DualRetriever`, memory Qdrant data-integrity classification.
 
-- [ ] **Step 1: Add RED tests for memory result adaptation**
+- [x] **Step 1: Add RED tests for memory result adaptation**
 
 Define a narrow internal dependency:
 
@@ -450,7 +450,7 @@ Test conversion to a validated memory Hit with ID `memory:{itemID}`, Kind, key i
 Metadata and the required UserID. Test that a returned different user or malformed
 memory result becomes IntegrityFailure.
 
-- [ ] **Step 2: Add RED tests for memory Qdrant error classes**
+- [x] **Step 2: Add RED tests for memory Qdrant error classes**
 
 Add an exported wrapper only for malformed response data:
 
@@ -467,7 +467,7 @@ errors remain ordinary infrastructure errors.
 
 Tests prove `errors.As` survives outer `fmt.Errorf("%w")` wrapping.
 
-- [ ] **Step 3: Add dual retrieval RED tests**
+- [x] **Step 3: Add dual retrieval RED tests**
 
 Use:
 
@@ -513,7 +513,7 @@ Tests prove:
 - disabled sources are not called
 - request validation requires ownership and positive enabled-source limits
 
-- [ ] **Step 4: Run RED**
+- [x] **Step 4: Run RED**
 
 ```bash
 go test ./internal/contextretrieval ./internal/memoryitem -run 'Test(Memory|Dual|QdrantData)'
@@ -521,7 +521,7 @@ go test ./internal/contextretrieval ./internal/memoryitem -run 'Test(Memory|Dual
 
 Expected: FAIL because adapters, orchestration and typed memory data errors do not exist.
 
-- [ ] **Step 5: Implement memory adapter and dual retriever**
+- [x] **Step 5: Implement memory adapter and dual retriever**
 
 Use constructors:
 
@@ -554,7 +554,7 @@ if IsInfrastructureFailure(err) {
 Memory adapter maps `memoryitem.IsQdrantDataError` to IntegrityFailure and all
 other search errors to InfrastructureFailure.
 
-- [ ] **Step 6: Run GREEN and race tests**
+- [x] **Step 6: Run GREEN and race tests**
 
 ```bash
 go test ./internal/contextretrieval ./internal/memoryitem
@@ -563,7 +563,7 @@ go test -race ./internal/contextretrieval ./internal/memoryitem
 
 Expected: PASS, including the concurrency test under race detection.
 
-- [ ] **Step 7: Add and run real dual retrieval demo**
+- [x] **Step 7: Add and run real dual retrieval demo**
 
 The command reads Ollama and both Qdrant collections, refuses unexpected
 collection names, embeds one query once and searches:
@@ -590,12 +590,12 @@ Cross-scope document present: false
 
 The command exits non-zero if warnings occur so standalone diagnosis is strict.
 
-- [ ] **Step 8: Write SOP and operation log**
+- [x] **Step 8: Write SOP and operation log**
 
 Explain one shared query vector, concurrent I/O, source-specific ownership,
 failure classification and why payload isolation failures are not degraded.
 
-- [ ] **Step 9: Review and verify**
+- [x] **Step 9: Review and verify**
 
 ```bash
 gofmt -w internal/contextretrieval/*.go internal/memoryitem/*.go cmd/dual-retrieval-demo/*.go
@@ -609,7 +609,7 @@ git diff --check
 Review goroutine completion, cancellation, error wrapping, user/scope validation
 and collection guards.
 
-- [ ] **Step 10: Commit lesson 26**
+- [x] **Step 10: Commit lesson 26**
 
 ```bash
 git add internal/contextretrieval internal/memoryitem cmd/dual-retrieval-demo docs/teaching/dual-retrieval-sop.md docs/teaching/00-dual-retrieval-batch-operation-log.md

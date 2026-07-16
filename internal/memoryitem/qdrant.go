@@ -164,40 +164,48 @@ func (q *QdrantIndexer) Search(ctx context.Context, userID string, kind Kind, ve
 
 	results := make([]SearchResult, 0, len(response.Result.Points))
 	for index, point := range response.Result.Points {
-		pointID, err := decodeQdrantPointID(point.ID)
+		result, err := qdrantPointToSearchResult(point, userID, kind, index)
 		if err != nil {
-			return nil, fmt.Errorf("decode Qdrant result %d point ID: %w", index, err)
+			return nil, err
 		}
-		payload := point.Payload
-		if strings.TrimSpace(payload.UserID) != userID {
-			return nil, fmt.Errorf("Qdrant result %d belongs to user %q, want %q", index, payload.UserID, userID)
-		}
-		if payload.MemoryItemID != pointID || pointID <= 0 {
-			return nil, fmt.Errorf("Qdrant result %d point ID %d and memory item ID %d differ", index, pointID, payload.MemoryItemID)
-		}
-		resultKind, err := normalizeKind(payload.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("Qdrant result %d kind: %w", index, err)
-		}
-		key, err := normalizeMemoryKey(payload.MemoryKey)
-		if err != nil {
-			return nil, fmt.Errorf("Qdrant result %d key: %w", index, err)
-		}
-		if kind != "" && resultKind != kind {
-			return nil, fmt.Errorf("Qdrant result %d kind %q bypassed requested kind %q", index, resultKind, kind)
-		}
-		if strings.TrimSpace(payload.Value) == "" || payload.Version <= 0 {
-			return nil, fmt.Errorf("Qdrant result %d has invalid value or version", index)
-		}
-		if math.IsNaN(point.Score) || math.IsInf(point.Score, 0) {
-			return nil, fmt.Errorf("Qdrant result %d score is not finite", index)
-		}
-		results = append(results, SearchResult{
-			ItemID: pointID, Score: point.Score, UserID: userID, Kind: resultKind,
-			Key: key, Value: payload.Value, Version: payload.Version,
-		})
+		results = append(results, result)
 	}
 	return results, nil
+}
+
+func qdrantPointToSearchResult(point qdrantQueryPoint, userID string, kind Kind, index int) (SearchResult, error) {
+	pointID, err := decodeQdrantPointID(point.ID)
+	if err != nil {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("decode Qdrant result %d point ID: %w", index, err))
+	}
+	payload := point.Payload
+	if strings.TrimSpace(payload.UserID) != userID {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d belongs to user %q, want %q", index, payload.UserID, userID))
+	}
+	if payload.MemoryItemID != pointID || pointID <= 0 {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d point ID %d and memory item ID %d differ", index, pointID, payload.MemoryItemID))
+	}
+	resultKind, err := normalizeKind(payload.Kind)
+	if err != nil {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d kind: %w", index, err))
+	}
+	key, err := normalizeMemoryKey(payload.MemoryKey)
+	if err != nil {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d key: %w", index, err))
+	}
+	if kind != "" && resultKind != kind {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d kind %q bypassed requested kind %q", index, resultKind, kind))
+	}
+	if strings.TrimSpace(payload.Value) == "" || payload.Version <= 0 {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d has invalid value or version", index))
+	}
+	if math.IsNaN(point.Score) || math.IsInf(point.Score, 0) {
+		return SearchResult{}, qdrantDataError(fmt.Errorf("Qdrant result %d score is not finite", index))
+	}
+	return SearchResult{
+		ItemID: pointID, Score: point.Score, UserID: userID, Kind: resultKind,
+		Key: key, Value: payload.Value, Version: payload.Version,
+	}, nil
 }
 
 func (q *QdrantIndexer) collectionPath() (string, error) {
@@ -241,7 +249,7 @@ func (q *QdrantIndexer) doJSON(ctx context.Context, method, path string, body, o
 	}
 	if output != nil {
 		if err := json.NewDecoder(response.Body).Decode(output); err != nil {
-			return response.StatusCode, fmt.Errorf("decode Qdrant response: %w", err)
+			return response.StatusCode, qdrantDataError(fmt.Errorf("decode Qdrant response: %w", err))
 		}
 	}
 	return response.StatusCode, nil
@@ -340,10 +348,12 @@ type qdrantQueryRequest struct {
 
 type qdrantQueryResponse struct {
 	Result struct {
-		Points []struct {
-			ID      json.RawMessage `json:"id"`
-			Score   float64         `json:"score"`
-			Payload qdrantPayload   `json:"payload"`
-		} `json:"points"`
+		Points []qdrantQueryPoint `json:"points"`
 	} `json:"result"`
+}
+
+type qdrantQueryPoint struct {
+	ID      json.RawMessage `json:"id"`
+	Score   float64         `json:"score"`
+	Payload qdrantPayload   `json:"payload"`
 }
