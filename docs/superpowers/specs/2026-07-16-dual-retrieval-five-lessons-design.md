@@ -284,10 +284,10 @@ environment variables.
 
 Add example keys:
 
-    MEMORY_QDRANT_URL=http://127.0.0.1:6333
-    MEMORY_QDRANT_COLLECTION=offline_rag_memory_items_v1
-    DOCUMENT_QDRANT_COLLECTION=offline_rag_document_chunks_v1
-    MEMORY_EMBEDDING_MODEL=bge-m3
+    QDRANT_BASE_URL=http://127.0.0.1:6333
+    QDRANT_MEMORY_COLLECTION=offline_rag_memory_items_v1
+    QDRANT_DOCUMENT_COLLECTION=offline_rag_document_chunks_v1
+    OLLAMA_EMBED_MODEL=bge-m3
 
 The checked-in example contains no real credentials.
 
