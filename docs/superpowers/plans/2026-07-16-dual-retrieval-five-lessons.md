@@ -239,7 +239,7 @@ git commit -m "feat: define dual retrieval hit boundaries"
 - Consumes: Task 24 `Hit`, `SourceDocument`, `ValidateHit`, typed source errors; memoryitem `Embedder`.
 - Produces: `DocumentChunk`, `DocumentQdrant`, `DeterministicDocumentPointID`, `EnsureCollection`, `Upsert`, `Search`.
 
-- [ ] **Step 1: Write document identity and validation RED tests**
+- [x] **Step 1: Write document identity and validation RED tests**
 
 Use this public type:
 
@@ -270,7 +270,7 @@ if first == mustPointID("another-scope", "chunk-001") {
 The implementation uses SHA256 of `scope + "\\x00" + chunkID`, sets UUID version
 and variant bits, and formats a lowercase UUID string.
 
-- [ ] **Step 2: Write Qdrant RED tests with httptest.Server**
+- [x] **Step 2: Write Qdrant RED tests with httptest.Server**
 
 Cover exact request behavior:
 
@@ -283,7 +283,7 @@ Cover exact request behavior:
 - HTTP/non-success/context errors become InfrastructureFailure
 - mismatched payload chunk ID, empty text and non-finite score are rejected
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 ```bash
 go test ./internal/contextretrieval -run 'Test(Document|Deterministic)'
@@ -291,7 +291,7 @@ go test ./internal/contextretrieval -run 'Test(Document|Deterministic)'
 
 Expected: FAIL because document types and client do not exist.
 
-- [ ] **Step 4: Implement document identity and Qdrant client**
+- [x] **Step 4: Implement document identity and Qdrant client**
 
 Use:
 
@@ -328,7 +328,7 @@ with `with_payload=true`, `with_vector=false` and this mandatory filter:
 
 Qdrant response payload is revalidated before constructing each Hit.
 
-- [ ] **Step 5: Run GREEN**
+- [x] **Step 5: Run GREEN**
 
 ```bash
 go test ./internal/contextretrieval
@@ -337,7 +337,7 @@ go test -race ./internal/contextretrieval
 
 Expected: PASS.
 
-- [ ] **Step 6: Add the real document Qdrant demo**
+- [x] **Step 6: Add the real document Qdrant demo**
 
 The command reads these file-config keys:
 
@@ -361,7 +361,7 @@ Add to the checked-in example:
 QDRANT_DOCUMENT_COLLECTION=offline_rag_document_chunks_v1
 ```
 
-- [ ] **Step 7: Run the real practice**
+- [x] **Step 7: Run the real practice**
 
 First verify services without writing:
 
@@ -386,7 +386,7 @@ Cross-scope point present: false
 Idempotent point IDs: true
 ```
 
-- [ ] **Step 8: Write SOP, operation impact and production boundary**
+- [x] **Step 8: Write SOP, operation impact and production boundary**
 
 Document the curl/command, collection schema, deterministic IDs, mandatory scope
 filter, payload indexes, result checks and actual output. Record that this lesson
@@ -395,7 +395,7 @@ writes only fixed idempotent points to the new document collection.
 Record ingestion worker, aliases and rebuild jobs as production boundaries in
 the SOP; the shared optimization backlog is updated in lesson 27.
 
-- [ ] **Step 9: Review and verify**
+- [x] **Step 9: Review and verify**
 
 ```bash
 gofmt -w internal/contextretrieval/*.go cmd/document-qdrant-demo/*.go
@@ -409,7 +409,7 @@ git diff --check
 Review every Qdrant path, filter, response ownership check, timeout, collection
 guard, config example and secret scan.
 
-- [ ] **Step 10: Commit lesson 25**
+- [x] **Step 10: Commit lesson 25**
 
 ```bash
 git add internal/contextretrieval cmd/document-qdrant-demo config/recent-chat.env.example docs/teaching/document-qdrant-sop.md docs/teaching/00-dual-retrieval-batch-operation-log.md
