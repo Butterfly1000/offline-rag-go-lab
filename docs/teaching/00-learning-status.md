@@ -389,7 +389,9 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 21. [document-identity-version-sop.md](/offline-rag-go-lab/docs/teaching/document-identity-version-sop.md:1)
 22. [structured-document-chunking-sop.md](/offline-rag-go-lab/docs/teaching/structured-document-chunking-sop.md:1)
 23. [idempotent-document-ingestion-sop.md](/offline-rag-go-lab/docs/teaching/idempotent-document-ingestion-sop.md:1)
-24. [00-document-ingestion-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-document-ingestion-batch-operation-log.md:1)
+24. [document-snapshot-alias-sop.md](/offline-rag-go-lab/docs/teaching/document-snapshot-alias-sop.md:1)
+25. [document-retrieval-evaluation-sop.md](/offline-rag-go-lab/docs/teaching/document-retrieval-evaluation-sop.md:1)
+26. [00-document-ingestion-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-document-ingestion-batch-operation-log.md:1)
 
 然后确认第 13-23 节已完成闭环，第 24-33 节已实现验证但尚未由用户确认学会。下一次
 教学仍应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”。新的优化
