@@ -161,3 +161,14 @@ content 而不是模型实际收到的完整 prompt。
 - 为什么 Go 标准 regexp 不能直接处理当前 tokenizer 的某些规则
 - tokenizer 代码和 tokenizer 资产分别如何验证
 - 下一步应该继续教学、运行验证还是修改代码
+
+当前 document ingestion 实现接手时还必须读取：
+
+- `docs/teaching/document-identity-version-sop.md`
+- `docs/teaching/structured-document-chunking-sop.md`
+- `docs/teaching/idempotent-document-ingestion-sop.md`
+- `docs/teaching/00-document-ingestion-batch-operation-log.md`
+
+第 29-31 节已实现并通过本地真实验证，但用户尚未逐节确认学会。下一实现节是第 32 节
+snapshot rebuild、Qdrant alias 原子切换和只切 alias 的回滚；不得修改既有三套 collection，
+不得删除物理 collection，不得 push。

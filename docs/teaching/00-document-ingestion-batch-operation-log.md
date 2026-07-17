@@ -187,3 +187,38 @@ go run ./cmd/document-chunk-demo --config config/recent-chat.env --format markdo
 本节只完成“源文件 -> chunks”。第 31 节才应用 MySQL schema、调用本地 bge-m3 并
 写隔离 Qdrant collection。当前 tokenizer 资产来源与 Ollama 模型同源性仍未证明，
 已保留官方 runtime/token IDs 对照 backlog。
+
+## 第 31 节：真实幂等 MySQL、Ollama 与 Qdrant 入库
+
+### 影响分析
+
+本节只连接用户批准的本地服务：MySQL `offline_rag`、Ollama `bge-m3` 和隔离 Qdrant
+collection `offline_rag_document_ingestion_lab_v1`。既有三个 collections 未修改，未访问
+外部网络，未 push。
+
+### RED/GREEN 证据
+
+初始 RED 因 `Version`、`BuildIdentity`、`VectorPoint`、`IngestionService` API 不存在而
+编译失败。后续分别保留两个 review RED：非有限 embedding 被错误写入 fake index；caller
+取消后 failed 写回沿用 cancelled context。修复后 focused tests 通过。
+
+### 真实运行证据
+
+第一次运行：version=1、noop=false、chunks=5、embed batches=1、upsert batches=1、
+manifest rows=5。第二次同参数运行：version=1、noop=true、embed/upsert batches 均为 0，
+manifest 仍为 5。
+
+Qdrant 实测：status=green、points=5、size=1024、Cosine，并建立 scope/document/chunk 三个
+keyword indexes。
+
+### 执行问题
+
+第一次真实命令耗时异常长，是 Codex 执行授权等待，不是 Ollama 推理耗时。批准并保存
+`go run ./cmd/document-ingest-demo` 项目前缀后，第二次完整命令约 1 秒返回。
+
+### Review 修复
+
+1. 编排层显式拒绝 `NaN/Inf`，不依赖 Qdrant adapter 兜底
+2. failed 写回使用脱离 caller cancellation、上限 5 秒的 cleanup context
+3. `LastInsertId=0,nil` 返回明确错误，不生成 `%!w(<nil>)`
+4. collection 在领域和 CLI 两层限制为隔离 ingestion 前缀/配置值

@@ -275,8 +275,25 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
 
-下一实现节是第 31 节：真实 MySQL manifest、Ollama batch embedding 和隔离 Qdrant
-collection 的幂等 ingestion。
+### 已实现并验证、尚未确认学会：第 31 节 Idempotent Document Ingestion
+
+实现状态：
+
+1. MySQL 用唯一 build identity 创建或复用 document version
+2. `ready/active` 在 embedding 和 Qdrant 前直接 no-op
+3. 本地 `bge-m3` 按 batch 生成并严格验证 1024 维向量
+4. 隔离 Qdrant collection 使用稳定 UUID、`wait=true` 和 keyword indexes
+5. 所有 points 成功后才事务保存 manifest 并把 version 置为 ready
+6. 失败重试复用稳定 point ID，错误写回有长度和取消边界
+7. 真实两次运行证明第二次 embedding/upsert 都为 0，points/manifest 均保持 5
+
+文档：
+
+- [idempotent-document-ingestion-sop.md](/offline-rag-go-lab/docs/teaching/idempotent-document-ingestion-sop.md:1)
+
+注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
+
+下一实现节是第 32 节：验证新 snapshot 后切换 Qdrant alias，并支持无删除回滚。
 
 已有概念入口文档：
 
@@ -353,7 +370,11 @@ collection 的幂等 ingestion。
 18. [dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/dual-retrieval-sop.md:1)
 19. [context-merge-budget-sop.md](/offline-rag-go-lab/docs/teaching/context-merge-budget-sop.md:1)
 20. [recent-chat-dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-dual-retrieval-sop.md:1)
+21. [document-identity-version-sop.md](/offline-rag-go-lab/docs/teaching/document-identity-version-sop.md:1)
+22. [structured-document-chunking-sop.md](/offline-rag-go-lab/docs/teaching/structured-document-chunking-sop.md:1)
+23. [idempotent-document-ingestion-sop.md](/offline-rag-go-lab/docs/teaching/idempotent-document-ingestion-sop.md:1)
+24. [00-document-ingestion-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-document-ingestion-batch-operation-log.md:1)
 
-然后确认第 13-23 节已完成闭环，第 24-28 节已实现验证但尚未由用户确认学会。下一次
-教学应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”；下一实现章
-才是生产级 document ingestion/chunking 与 retrieval evaluation。
+然后确认第 13-23 节已完成闭环，第 24-31 节已实现验证但尚未由用户确认学会。下一次
+教学仍应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”；下一实现节
+是第 32 节 snapshot 验证、alias 切换和回滚。
