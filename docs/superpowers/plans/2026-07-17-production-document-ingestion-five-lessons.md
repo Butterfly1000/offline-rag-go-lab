@@ -76,7 +76,7 @@ Expected: package build fails because the new identity and state APIs do not exi
 
 - [ ] **Step 3: Implement the minimal domain model and SQL schema**
 
-Use SHA256 lowercase hex, explicit normalization and a closed transition table. Define the three InnoDB tables with `utf8mb4`, foreign keys, unique build identity, unique per-version chunk identity and indexes for source/status lookup. Keep `active_version_id` nullable and add its foreign key after both source/version tables exist.
+Use SHA256 lowercase hex, explicit normalization and a closed transition table. Define the three InnoDB tables with `utf8mb4`, version/chunk foreign keys, unique build identity, unique per-version chunk identity and indexes for source/status lookup. Keep `active_version_id` nullable; the activation transaction must verify that the referenced version belongs to the same source instead of introducing a circular foreign key that cannot be applied idempotently with plain `CREATE TABLE IF NOT EXISTS`.
 
 - [ ] **Step 4: Run GREEN and race tests**
 

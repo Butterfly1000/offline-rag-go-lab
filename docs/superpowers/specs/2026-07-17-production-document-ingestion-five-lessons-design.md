@@ -112,7 +112,10 @@ active versions remain immutable
 MySQL unique keys prevent duplicate logical sources, duplicate build definitions
 and duplicate chunk identities within one version. State updates use explicit
 expected-state conditions so two workers cannot silently activate conflicting
-versions.
+versions. The version and chunk tables use forward foreign keys. The nullable
+`active_version_id` pointer is checked inside the activation transaction rather
+than using a circular foreign key that a plain idempotent teaching schema cannot
+reapply safely.
 
 ## 5. Stable Chunk Identity
 
