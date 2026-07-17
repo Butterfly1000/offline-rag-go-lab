@@ -221,9 +221,9 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 下一章应当从这里开始：
 
-### 下一实现章：生产级 Document Ingestion、Chunking 与 Retrieval Evaluation
+### 当前实现章：生产级 Document Ingestion、Chunking 与 Retrieval Evaluation（第 29-33 节已实现）
 
-第 24-28 节的合并框架已经实现。下一步不再重复融合编排，而是补齐文档来源侧：
+第 24-28 节的合并框架以及第 29-33 节文档来源、发布和评估主线均已实现：
 
 - 真实文件解析、标题/段落/代码结构识别和稳定 chunk ID
 - ingestion worker、批量 embedding、文档版本更新与旧 chunk 删除
@@ -301,7 +301,15 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 - [document-snapshot-alias-sop.md](/offline-rag-go-lab/docs/teaching/document-snapshot-alias-sop.md:1)
 
-注意：代码已实现验证，用户尚未确认学会。下一实现节是第 33 节 Golden Cases 检索评估。
+### 已实现并验证、尚未确认学会：第 33 节 Retrieval Evaluation
+
+已完成 12 个 Golden Cases、固定 Recall@3/MRR@3、scope 隔离和 forbidden-hit 门禁。真实本地结果为 Recall@3=1、MRR@3=1、scope isolation=100%、forbidden hits=0。
+
+文档：
+
+- [document-retrieval-evaluation-sop.md](/offline-rag-go-lab/docs/teaching/document-retrieval-evaluation-sop.md:1)
+
+注意：第 29-33 节实现主线已完成，但仍属于“已实现验证、尚未逐节确认学会”。
 
 已有概念入口文档：
 
@@ -383,6 +391,6 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 23. [idempotent-document-ingestion-sop.md](/offline-rag-go-lab/docs/teaching/idempotent-document-ingestion-sop.md:1)
 24. [00-document-ingestion-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-document-ingestion-batch-operation-log.md:1)
 
-然后确认第 13-23 节已完成闭环，第 24-31 节已实现验证但尚未由用户确认学会。下一次
-教学仍应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”；下一实现节
-是第 32 节 snapshot 验证、alias 切换和回滚。
+然后确认第 13-23 节已完成闭环，第 24-33 节已实现验证但尚未由用户确认学会。下一次
+教学仍应从第 24 节真实效果开始逐节讲，不要直接把实现状态改成“已学会”。新的优化
+必须由 Golden Cases 或真实失败证据驱动。

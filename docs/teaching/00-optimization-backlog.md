@@ -139,6 +139,10 @@ added token、回溯正则和完整 prompt 的 token IDs；任何 fork 更新必
 
 ## Document Ingestion 优化项
 
+### 0. 扩充生产 Golden Dataset
+
+当前 12 个 cases 只覆盖教学 fixture，分数 1.0 不代表生产泛化。后续从真实失败查询和人工标注扩充，按 dataset/version 保存报告，再评估 reranker、chunk policy 和 score threshold。
+
 ### 1. Oversized text 精确切分性能
 
 为什么需要：BPE token 数不保证随字符长度单调，当前只对已经超限的 unit 枚举前缀并

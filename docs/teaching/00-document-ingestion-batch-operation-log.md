@@ -236,3 +236,11 @@ Review/调试修复：
 3. MySQL active version 重复写相同值会返回 affected=0，新增读取当前值的幂等确认
 4. alias 切换前验证 current=from；一次 action 内 delete alias + create alias
 5. alias 成功、MySQL 失败时显式报告 reconciliation，不伪装分布式事务
+
+## 第 33 节：Golden Retrieval Evaluation
+
+RED：GoldenCase/Evaluate/metric API 不存在导致编译失败。GREEN 覆盖不足 10 cases、Recall 分母、MRR rank、重复 IDs、跨 scope、forbidden hits、固定 K 和稳定排序。
+
+真实数据包含 12 cases、两个 scopes、Markdown 与 Go。使用本地 bge-m3 和稳定 alias 实测：mean Recall@3=1、mean MRR@3=1、scope isolation=1、forbidden hits=0、exit=0。
+
+Review 新增稳定 JSON 字段 RED/GREEN，把 Go 默认大写字段固定为 `mean_recall_at_3`、`mean_mrr_at_3`、`recall_at_3` 和 `mrr_at_3`。
