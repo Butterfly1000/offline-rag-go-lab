@@ -81,6 +81,18 @@ if !isSupportedRole(message.Role) {
 
 ## 3. 实践 SOP
 
+### SOP 0：先运行跨环境回归
+
+新机器或更新 Go 版本、依赖、Tokenizer 资产后，先执行：
+
+```bash
+sh scripts/regression/lesson-08.sh
+```
+
+它会同时验证第 8 节依赖的本地 `sugarme/tokenizer` 兼容版本、中文黄金 token
+结果和消息格式。错误现象与排查顺序见
+[跨环境回归与排坑](/offline-rag-go-lab/docs/teaching/00-cross-environment-regression.md:1)。
+
 ### SOP 1：运行合法 user 消息
 
 在仓库根目录执行：
