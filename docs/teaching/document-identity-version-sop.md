@@ -218,3 +218,4 @@ go test -race ./internal/documentingest
 4. SHA256 用于确定性身份，不用于语义相似度。
 5. MySQL 保存权威版本和 manifest；Qdrant 后续只是可重建索引。
 6. active 版本不可原地修改，新内容必须走新版本构建和发布。
+7. 构建 hash 还绑定 embedding model；换模型必须创建新 vector build，不能复用旧向量空间。

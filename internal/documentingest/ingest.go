@@ -42,17 +42,17 @@ func (s *IngestionService) Ingest(ctx context.Context, request IngestRequest) (r
 	if err != nil {
 		return IngestResult{}, err
 	}
-	policyHash, err := ChunkPolicyHash(ChunkPolicyIdentity{Format: document.Format, ParserVersion: request.ParserVersion, MaxTokens: request.Policy.MaxTokens, OverlapLines: request.Policy.OverlapLines})
+	request.EmbeddingModel = strings.TrimSpace(request.EmbeddingModel)
+	if request.EmbeddingModel == "" {
+		return IngestResult{}, fmt.Errorf("embedding model is required")
+	}
+	policyHash, err := ChunkPolicyHash(ChunkPolicyIdentity{Format: document.Format, ParserVersion: request.ParserVersion, MaxTokens: request.Policy.MaxTokens, OverlapLines: request.Policy.OverlapLines, EmbeddingModel: request.EmbeddingModel})
 	if err != nil {
 		return IngestResult{}, err
 	}
 	build := BuildIdentity{KnowledgeScope: document.KnowledgeScope, DocumentID: document.DocumentID, SourceRef: document.SourceRef, ContentHash: ContentHash(document.Content), ParserVersion: strings.TrimSpace(request.ParserVersion), ChunkPolicyHash: policyHash, TargetCollection: strings.TrimSpace(request.TargetCollection)}
 	if err := validateBuildIdentity(build); err != nil {
 		return IngestResult{}, err
-	}
-	request.EmbeddingModel = strings.TrimSpace(request.EmbeddingModel)
-	if request.EmbeddingModel == "" {
-		return IngestResult{}, fmt.Errorf("embedding model is required")
 	}
 	if request.BatchSize <= 0 {
 		return IngestResult{}, fmt.Errorf("batch_size must be positive: %d", request.BatchSize)

@@ -30,11 +30,13 @@ type ChunkIdentityInput struct {
 	DuplicateOrdinal int
 }
 
-// ChunkPolicyIdentity makes parser/chunk-policy changes create a new build even
-// when the source bytes are unchanged.
+// ChunkPolicyIdentity contains every setting that changes chunk vectors. The
+// existing database column is named chunk_policy_hash, but the hash also binds
+// the embedding model so incompatible vector spaces cannot share a build.
 type ChunkPolicyIdentity struct {
-	Format        DocumentFormat
-	ParserVersion string
-	MaxTokens     int
-	OverlapLines  int
+	Format         DocumentFormat
+	ParserVersion  string
+	MaxTokens      int
+	OverlapLines   int
+	EmbeddingModel string
 }

@@ -63,8 +63,12 @@ func ChunkPolicyHash(policy ChunkPolicyIdentity) (string, error) {
 	if policy.OverlapLines < 0 {
 		return "", fmt.Errorf("overlap_lines must not be negative: %d", policy.OverlapLines)
 	}
+	embeddingModel, err := normalizeIdentifier("embedding_model", policy.EmbeddingModel)
+	if err != nil {
+		return "", err
+	}
 	canonical := strings.Join([]string{
-		string(format), parserVersion, strconv.Itoa(policy.MaxTokens), strconv.Itoa(policy.OverlapLines),
+		string(format), parserVersion, strconv.Itoa(policy.MaxTokens), strconv.Itoa(policy.OverlapLines), embeddingModel,
 	}, "\x00")
 	return sha256Hex(canonical), nil
 }

@@ -193,7 +193,7 @@ func TestStableChunkIDRejectsInvalidInput(t *testing.T) {
 
 func TestChunkPolicyHashIsDeterministicAndSensitive(t *testing.T) {
 	policy := ChunkPolicyIdentity{
-		Format: FormatMarkdown, ParserVersion: "markdown-v1", MaxTokens: 160, OverlapLines: 2,
+		Format: FormatMarkdown, ParserVersion: "markdown-v1", MaxTokens: 160, OverlapLines: 2, EmbeddingModel: "bge-m3",
 	}
 	first, err := ChunkPolicyHash(policy)
 	if err != nil {
@@ -216,12 +216,29 @@ func TestChunkPolicyHashIsDeterministicAndSensitive(t *testing.T) {
 	}
 }
 
+func TestChunkPolicyHashChangesWithEmbeddingModel(t *testing.T) {
+	policy := ChunkPolicyIdentity{Format: FormatMarkdown, ParserVersion: "markdown-v1", MaxTokens: 160, OverlapLines: 2, EmbeddingModel: "bge-m3"}
+	first, err := ChunkPolicyHash(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	policy.EmbeddingModel = "nomic-embed-text"
+	second, err := ChunkPolicyHash(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Fatal("embedding model change must create a different build-policy hash")
+	}
+}
+
 func TestChunkPolicyHashRejectsInvalidPolicy(t *testing.T) {
 	tests := []ChunkPolicyIdentity{
 		{},
-		{Format: FormatMarkdown, ParserVersion: "v1", MaxTokens: 0},
-		{Format: FormatMarkdown, ParserVersion: "v1", MaxTokens: 10, OverlapLines: -1},
-		{Format: "pdf", ParserVersion: "v1", MaxTokens: 10},
+		{Format: FormatMarkdown, ParserVersion: "v1", MaxTokens: 0, EmbeddingModel: "bge-m3"},
+		{Format: FormatMarkdown, ParserVersion: "v1", MaxTokens: 10, OverlapLines: -1, EmbeddingModel: "bge-m3"},
+		{Format: "pdf", ParserVersion: "v1", MaxTokens: 10, EmbeddingModel: "bge-m3"},
+		{Format: FormatMarkdown, ParserVersion: "v1", MaxTokens: 10},
 	}
 	for _, policy := range tests {
 		if _, err := ChunkPolicyHash(policy); err == nil {

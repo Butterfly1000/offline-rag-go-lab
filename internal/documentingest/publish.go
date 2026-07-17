@@ -26,7 +26,8 @@ type SnapshotIndex interface {
 }
 
 type PublicationStore interface {
-	ActivateVersion(context.Context, int64, int64) error
+	ValidateSnapshotVersions(context.Context, string, string, []SnapshotVersion) error
+	ActivateSnapshot(context.Context, string, string, []SnapshotVersion) error
 }
 
 type SnapshotVersion struct{ DocumentSourceID, VersionID int64 }
@@ -55,7 +56,10 @@ type ActivationResult struct {
 	AliasSwitched, MySQLActivated, ReconciliationRequired bool
 	From, To                                              string
 }
-type RollbackRequest struct{ Alias, From, To string }
+type RollbackRequest struct {
+	Alias, From string
+	Snapshot    SnapshotManifest
+}
 
 type Publisher struct {
 	Index              SnapshotIndex
@@ -161,6 +165,10 @@ func (p *Publisher) Activate(ctx context.Context, request ActivateRequest) (Acti
 	if age < 0 || age > maxAge {
 		return result, fmt.Errorf("verification report is stale")
 	}
+	versions := snapshotVersions(request.Snapshot)
+	if err := p.Store.ValidateSnapshotVersions(ctx, request.Snapshot.KnowledgeScope, request.Snapshot.Collection, versions); err != nil {
+		return result, fmt.Errorf("validate MySQL snapshot versions: %w", err)
+	}
 	current, err := p.Index.ResolveAlias(ctx, request.Alias)
 	if err != nil {
 		return result, err
@@ -172,39 +180,64 @@ func (p *Publisher) Activate(ctx context.Context, request ActivateRequest) (Acti
 		return result, err
 	}
 	result.AliasSwitched = true
-	for _, version := range snapshotVersions(request.Snapshot) {
-		if err := p.Store.ActivateVersion(ctx, version.DocumentSourceID, version.VersionID); err != nil {
-			result.ReconciliationRequired = true
-			return result, fmt.Errorf("alias switched but MySQL activation requires reconciliation: %w", err)
-		}
+	if err := p.Store.ActivateSnapshot(ctx, request.Snapshot.KnowledgeScope, request.Snapshot.Collection, versions); err != nil {
+		result.ReconciliationRequired = true
+		return result, fmt.Errorf("alias switched but MySQL activation requires reconciliation: %w", err)
 	}
 	result.MySQLActivated = true
 	return result, nil
 }
 
-func (p *Publisher) Rollback(ctx context.Context, request RollbackRequest) error {
-	if p == nil || p.Index == nil {
-		return fmt.Errorf("snapshot index is required")
+func (p *Publisher) Rollback(ctx context.Context, request RollbackRequest) (ActivationResult, error) {
+	result := ActivationResult{From: request.From, To: request.Snapshot.Collection}
+	if p == nil || p.Index == nil || p.Store == nil {
+		return result, fmt.Errorf("publisher index and store are required")
 	}
 	if err := validateLabCollection(request.From); err != nil {
-		return err
+		return result, err
 	}
-	if err := validateLabCollection(request.To); err != nil {
-		return err
+	if err := validateSnapshot(request.Snapshot); err != nil {
+		return result, err
+	}
+	versions := snapshotVersions(request.Snapshot)
+	if err := p.Store.ValidateSnapshotVersions(ctx, request.Snapshot.KnowledgeScope, request.Snapshot.Collection, versions); err != nil {
+		return result, fmt.Errorf("validate MySQL rollback versions: %w", err)
 	}
 	current, err := p.Index.ResolveAlias(ctx, request.Alias)
 	if err != nil {
-		return err
+		return result, err
 	}
 	if current != request.From {
-		return fmt.Errorf("alias currently points to %q, want %q", current, request.From)
+		return result, fmt.Errorf("alias currently points to %q, want %q", current, request.From)
 	}
-	return p.Index.SwitchAlias(ctx, request.Alias, request.From, request.To)
+	if err := p.Index.SwitchAlias(ctx, request.Alias, request.From, request.Snapshot.Collection); err != nil {
+		return result, err
+	}
+	result.AliasSwitched = true
+	if err := p.Store.ActivateSnapshot(ctx, request.Snapshot.KnowledgeScope, request.Snapshot.Collection, versions); err != nil {
+		result.ReconciliationRequired = true
+		return result, fmt.Errorf("alias rolled back but MySQL activation requires reconciliation: %w", err)
+	}
+	result.MySQLActivated = true
+	return result, nil
 }
 
 func validateSnapshot(snapshot SnapshotManifest) error {
-	if len(snapshotVersions(snapshot)) == 0 || strings.TrimSpace(snapshot.KnowledgeScope) == "" || len(snapshot.Chunks) == 0 {
+	versions := snapshotVersions(snapshot)
+	if len(versions) == 0 || strings.TrimSpace(snapshot.KnowledgeScope) == "" || len(snapshot.Chunks) == 0 {
 		return fmt.Errorf("snapshot identity and chunks are required")
+	}
+	seenSources := make(map[int64]bool, len(versions))
+	seenVersions := make(map[int64]bool, len(versions))
+	for _, version := range versions {
+		if version.DocumentSourceID <= 0 || version.VersionID <= 0 {
+			return fmt.Errorf("snapshot source and version IDs must be positive")
+		}
+		if seenSources[version.DocumentSourceID] || seenVersions[version.VersionID] {
+			return fmt.Errorf("snapshot source and version IDs must be unique")
+		}
+		seenSources[version.DocumentSourceID] = true
+		seenVersions[version.VersionID] = true
 	}
 	if err := validateLabCollection(snapshot.Collection); err != nil {
 		return err

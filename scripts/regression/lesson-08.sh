@@ -22,8 +22,11 @@ gomod=$(go env GOMOD)
 [ "$gomod" = "$repo_root/go.mod" ] || fail "wrong module: GOMOD=$gomod"
 pass "module root: $gomod"
 
-[ -f assets/tokenizers/qwen2/tokenizer.json ] || fail "missing assets/tokenizers/qwen2/tokenizer.json"
-pass "Qwen2 tokenizer asset exists"
+tokenizer_path=${RECENT_CHAT_TOKENIZER_PATH:-assets/tokenizers/qwen2/tokenizer.json}
+[ -f "$tokenizer_path" ] || fail "missing tokenizer asset: $tokenizer_path; run scripts/bootstrap/tokenizer-asset.sh SOURCE first"
+QWEN_TOKENIZER_PATH=$(CDPATH= cd -- "$(dirname -- "$tokenizer_path")" && pwd)/$(basename -- "$tokenizer_path")
+export QWEN_TOKENIZER_PATH
+pass "Qwen2 tokenizer asset exists: $QWEN_TOKENIZER_PATH"
 
 [ -f third_party/github.com/sugarme/tokenizer/go.mod ] || fail "missing local sugarme/tokenizer replacement"
 replacement=$(go list -m -f '{{if .Replace}}{{.Replace.Dir}}{{end}}' github.com/sugarme/tokenizer)
@@ -37,7 +40,7 @@ mkdir -p "$GOCACHE"
 go test ./internal/tokenizerdemo ./internal/chatprompt
 pass "Tokenizer and Qwen message-format tests"
 
-tokenizer_output=$(go run ./cmd/tokenizer-demo --text '我叫小黄，这个项目是 Go 写的。')
+tokenizer_output=$(go run ./cmd/tokenizer-demo --tokenizer "$QWEN_TOKENIZER_PATH" --text '我叫小黄，这个项目是 Go 写的。')
 printf '%s\n' "$tokenizer_output" | grep -F 'Token count: 15' >/dev/null || {
 	printf '%s\n' "$tokenizer_output" >&2
 	fail "Chinese golden text did not produce 15 tokens"

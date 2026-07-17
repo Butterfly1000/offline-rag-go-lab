@@ -13,7 +13,7 @@ sh scripts/regression/lesson-08.sh
 脚本不访问 MySQL、Qdrant、Ollama，也不主动调用业务公网接口，只会：
 
 1. 检查当前 `go` 命令和 `GOMOD`。
-2. 检查仓库内的 Qwen2 `tokenizer.json`。
+2. 检查配置指定的 Qwen2 `tokenizer.json`。
 3. 确认 `github.com/sugarme/tokenizer` 实际指向本地兼容版本。
 4. 运行 Tokenizer 和 Qwen 消息格式单元测试。
 5. 验证中文黄金文本必须得到 15 tokens。
@@ -28,6 +28,27 @@ sh scripts/regression/lesson-08.sh
 ```text
 Lesson 08 cross-environment regression passed.
 ```
+
+### 全新 clone 必须先初始化资产
+
+`assets/tokenizers/**/*.json` 被 `.gitignore` 排除，因为 Tokenizer 是模型相关资产，
+不能假设每个 clone 都携带同一份文件。新机器先提供模型匹配的源文件：
+
+```bash
+sh scripts/bootstrap/tokenizer-asset.sh \
+  ~/Dolphin/hf_model/tokenizer.json
+```
+
+脚本默认复制到 `assets/tokenizers/qwen2/tokenizer.json`。如果不想复制，也可以让回归
+直接读取外部路径：
+
+```bash
+RECENT_CHAT_TOKENIZER_PATH=~/Dolphin/hf_model/tokenizer.json \
+  sh scripts/regression/lesson-08.sh
+```
+
+这个机制解决“资产如何进入新 clone”，但不证明文件与 Ollama 模型严格同源。模型
+来源与 token IDs 黄金对照仍是独立验证项。
 
 ## 2. 为什么第 8 节也要回归 Tokenizer
 
@@ -127,8 +148,9 @@ byte，直接混用会切错文本。
 assets/tokenizers/qwen2/tokenizer.json
 ```
 
-它是项目资产，不是 Go module。新机器缺少这个文件时，即使所有 Go 依赖都存在，
-Tokenizer demo 仍然无法运行。
+它是本地项目资产，不是 Go module，也不会由 Git 跟踪。新机器缺少这个文件时，即使
+所有 Go 依赖都存在，Tokenizer demo 仍然无法运行。此时运行 bootstrap 脚本，或通过
+`RECENT_CHAT_TOKENIZER_PATH` 指向外部文件。
 
 ### 问题六：Go 构建缓存目录可能不可写
 
@@ -163,7 +185,7 @@ sh scripts/regression/lesson-08.sh
 - `GOMOD` 不是当前仓库的 `go.mod`：先进入仓库根目录。
 - `Replace` 缺失：当前 `go.mod` 不是本项目预期版本。
 - `third_party` 缺失：仓库内容或分支不完整。
-- Tokenizer 资产缺失：补齐项目资产，不要反复执行 `go mod tidy`。
+- Tokenizer 资产缺失：运行 `scripts/bootstrap/tokenizer-asset.sh`，不要反复执行 `go mod tidy`。
 - 中文测试失败：检查本地兼容代码，不要用英文测试代替。
 - 只有消息格式测试失败：再检查第 8 节 `internal/chatprompt` 实现。
 

@@ -68,12 +68,16 @@ delete/create 是同一 Qdrant action 请求。代码没有 collection DELETE AP
 
 verification report 绑定 collection、scope、manifest digest、point count 和时间，默认 5 分钟过期。切换前再次解析 alias，当前目标必须等于 `from`，否则拒绝执行。
 
-Qdrant alias 和 MySQL 不存在跨系统事务。顺序是先切 alias，再更新 MySQL active version；若 MySQL 失败，结果明确返回 `ReconciliationRequired=true`，不能谎称整体回滚。
+Qdrant alias 和 MySQL 不存在跨系统事务。发布和回滚会先在 MySQL 预检目标 snapshot
+中每个 version 的 scope、collection、status 和 source 归属，然后切 alias，再用一个
+MySQL 事务激活完整 snapshot。事务先清空该 scope 的 active pointers，再设置目标版本，
+所以目标 snapshot 不存在的 source 不会继续指向新 collection。若事务失败，结果明确
+返回 `ReconciliationRequired=true`，不能谎称整体回滚。
 
 ## 5. 两个真实坑
 
 1. 当前 Qdrant 使用 `GET /aliases` 返回 `result.aliases`；`GET /aliases/{name}` 是空 body 404。已用真实响应回归锁定。
-2. MySQL 默认 `RowsAffected` 是实际变化行数。active version 已等于目标时 UPDATE 返回 0；代码会再读取当前值，相同才视为幂等成功。
+2. rollback 不能逐条更新目标版本，否则新 snapshot 独有的 source 会残留 active pointer；当前使用完整 scope snapshot 事务覆盖。
 
 ## 6. 测试与边界
 

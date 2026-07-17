@@ -229,6 +229,19 @@ RED：publication/alias API 不存在导致编译失败。GREEN 后真实构建 
 
 真实发布顺序为 v1 -> v2 -> 回滚 v1 -> 恢复 v2；最终 alias 指向 v2，两套物理 collection 均保留，collection 删除操作为 0。
 
+### Push review 后的回滚一致性修正
+
+独立 review 发现只切 alias 或逐 source 激活并不完整：如果 v2 比 v1 多一个 source，
+回滚 v1 后这个 source 的 MySQL `active_version_id` 会错误保留在 v2。修复后的流程是：
+
+1. alias 切换前预检目标 snapshot 的 source/version 唯一性与数据库归属。
+2. alias 切换后，在一个 MySQL 事务中清空该 scope 的全部 active pointers。
+3. 同一事务内设置目标 snapshot 的完整 active version 集合。
+4. 事务失败时返回 reconciliation required，不报告整体成功。
+
+同时，文档构建 hash 已加入 embedding model，避免切换向量模型后把旧向量误判为幂等
+Noop。这两个问题均由 push review 提前发现，不是线上故障。
+
 Review/调试修复：
 
 1. 聚合多个文档，manifest digest 改按稳定 point ID 排序，避免重复 ordinal 非确定性

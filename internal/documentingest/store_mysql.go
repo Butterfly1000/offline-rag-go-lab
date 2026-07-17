@@ -190,7 +190,14 @@ func (s *MySQLManifestStore) LoadReadySnapshot(ctx context.Context, scope, colle
 	return SnapshotManifest{KnowledgeScope: scope, Collection: collection, Versions: versions, Chunks: chunks, ManifestDigest: ManifestDigest(chunks)}, nil
 }
 
-func (s *MySQLManifestStore) ActivateVersion(ctx context.Context, sourceID, versionID int64) error {
+func (s *MySQLManifestStore) ValidateSnapshotVersions(ctx context.Context, scope, collection string, versions []SnapshotVersion) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("MySQL manifest database is required")
+	}
+	return validateStoredSnapshotVersions(ctx, s.db, scope, collection, versions, false)
+}
+
+func (s *MySQLManifestStore) ActivateSnapshot(ctx context.Context, scope, collection string, versions []SnapshotVersion) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("MySQL manifest database is required")
 	}
@@ -199,52 +206,89 @@ func (s *MySQLManifestStore) ActivateVersion(ctx context.Context, sourceID, vers
 		return err
 	}
 	defer tx.Rollback()
-	var status VersionStatus
-	if err := tx.QueryRowContext(ctx, `SELECT status FROM document_versions WHERE id=? AND document_source_id=? FOR UPDATE`, versionID, sourceID).Scan(&status); err != nil {
+	if err := validateStoredSnapshotVersions(ctx, tx, scope, collection, versions, true); err != nil {
 		return err
 	}
-	if status != StatusReady && status != StatusActive {
-		return fmt.Errorf("version %d status %q cannot be activated", versionID, status)
+	if _, err := tx.ExecContext(ctx, `UPDATE document_sources SET active_version_id=NULL WHERE knowledge_scope=?`, scope); err != nil {
+		return fmt.Errorf("clear active document snapshot: %w", err)
 	}
-	if status == StatusReady {
-		result, err := tx.ExecContext(ctx, `UPDATE document_versions SET status='active', activated_at=CURRENT_TIMESTAMP(6) WHERE id=? AND document_source_id=? AND status='ready'`, versionID, sourceID)
+	for _, version := range versions {
+		if _, err := tx.ExecContext(ctx, `UPDATE document_versions SET status='active', activated_at=COALESCE(activated_at, CURRENT_TIMESTAMP(6)) WHERE id=? AND document_source_id=? AND status IN ('ready','active')`, version.VersionID, version.DocumentSourceID); err != nil {
+			return fmt.Errorf("activate document version %d: %w", version.VersionID, err)
+		}
+		result, err := tx.ExecContext(ctx, `UPDATE document_sources SET active_version_id=? WHERE id=? AND knowledge_scope=?`, version.VersionID, version.DocumentSourceID, scope)
 		if err != nil {
 			return err
 		}
-		if err := requireOneAffected(result, "activate document version"); err != nil {
+		if err := requireOneAffected(result, "set active document version"); err != nil {
 			return err
 		}
-	}
-	result, err := tx.ExecContext(ctx, `UPDATE document_sources SET active_version_id=? WHERE id=?`, versionID, sourceID)
-	if err != nil {
-		return err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
-		var current sql.NullInt64
-		if err := tx.QueryRowContext(ctx, `SELECT active_version_id FROM document_sources WHERE id=? FOR UPDATE`, sourceID).Scan(&current); err != nil {
-			return err
-		}
-		if !current.Valid {
-			return fmt.Errorf("document source %d has no active version", sourceID)
-		}
-		if err := validateIdempotentActiveVersion(affected, current.Int64, versionID); err != nil {
-			return err
-		}
-	} else if affected != 1 {
-		return fmt.Errorf("set active document version affected %d rows, want 1", affected)
 	}
 	return tx.Commit()
 }
 
-func validateIdempotentActiveVersion(affected, current, expected int64) error {
-	if affected == 1 || affected == 0 && current == expected {
-		return nil
+type snapshotVersionQueryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+func validateStoredSnapshotVersions(ctx context.Context, queryer snapshotVersionQueryer, scope, collection string, versions []SnapshotVersion, forUpdate bool) error {
+	if _, err := normalizeIdentifier("knowledge_scope", scope); err != nil {
+		return err
 	}
-	return fmt.Errorf("active document version is %d, want %d", current, expected)
+	if err := validateLabCollection(collection); err != nil {
+		return err
+	}
+	if len(versions) == 0 {
+		return fmt.Errorf("snapshot versions are required")
+	}
+	expected := make(map[int64]SnapshotVersion, len(versions))
+	placeholders := make([]string, len(versions))
+	args := make([]any, len(versions))
+	seenSources := make(map[int64]bool, len(versions))
+	for i, version := range versions {
+		if version.DocumentSourceID <= 0 || version.VersionID <= 0 || seenSources[version.DocumentSourceID] {
+			return fmt.Errorf("snapshot source and version IDs must be positive and unique")
+		}
+		if _, duplicate := expected[version.VersionID]; duplicate {
+			return fmt.Errorf("snapshot source and version IDs must be positive and unique")
+		}
+		seenSources[version.DocumentSourceID] = true
+		expected[version.VersionID] = version
+		placeholders[i] = "?"
+		args[i] = version.VersionID
+	}
+	query := `SELECT v.id, v.document_source_id, v.status, s.knowledge_scope, v.target_collection
+        FROM document_versions v JOIN document_sources s ON s.id=v.document_source_id
+        WHERE v.id IN (` + strings.Join(placeholders, ",") + `)`
+	if forUpdate {
+		query += ` FOR UPDATE`
+	}
+	rows, err := queryer.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	seen := 0
+	for rows.Next() {
+		var versionID, sourceID int64
+		var status VersionStatus
+		var storedScope, storedCollection string
+		if err := rows.Scan(&versionID, &sourceID, &status, &storedScope, &storedCollection); err != nil {
+			return err
+		}
+		want, ok := expected[versionID]
+		if !ok || want.DocumentSourceID != sourceID || storedScope != scope || storedCollection != collection || status != StatusReady && status != StatusActive {
+			return fmt.Errorf("version %d does not belong to snapshot scope %q collection %q", versionID, scope, collection)
+		}
+		seen++
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if seen != len(versions) {
+		return fmt.Errorf("found %d snapshot versions, want %d", seen, len(versions))
+	}
+	return nil
 }
 
 func validateBuildIdentity(build BuildIdentity) error {

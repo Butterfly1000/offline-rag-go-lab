@@ -68,10 +68,15 @@ func main() {
 		}
 		fmt.Printf("Verified collection: %s\nManifest digest: %s\nPoints: %d\nAlias: %s\nFrom: %s\nTo: %s\nAlias switched: %t\nMySQL activated: %t\n", report.Collection, report.ManifestDigest, report.PointCount, alias, result.From, result.To, result.AliasSwitched, result.MySQLActivated)
 	case "rollback":
-		if err := publisher.Rollback(ctx, documentingest.RollbackRequest{Alias: alias, From: *from, To: *to}); err != nil {
+		snapshot, err := store.LoadReadySnapshot(ctx, *scope, *to)
+		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Alias: %s\nRolled back from: %s\nRolled back to: %s\nCollections deleted: 0\n", alias, *from, *to)
+		result, err := publisher.Rollback(ctx, documentingest.RollbackRequest{Alias: alias, From: *from, Snapshot: snapshot})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Alias: %s\nRolled back from: %s\nRolled back to: %s\nAlias switched: %t\nMySQL activated: %t\nCollections deleted: 0\n", alias, result.From, result.To, result.AliasSwitched, result.MySQLActivated)
 	case "resolve":
 		target, err := index.ResolveAlias(ctx, alias)
 		if err != nil {

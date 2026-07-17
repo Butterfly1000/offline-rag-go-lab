@@ -1,6 +1,7 @@
 package tokenizerdemo
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestCounterUsesLoadedTokenizerToCountText(t *testing.T) {
 }
 
 func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
-	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +59,7 @@ func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
 }
 
 func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
-	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +98,7 @@ func TestAddedVocabularySelectsLeftmostLongestMatches(t *testing.T) {
 }
 
 func TestQwenCounterKeepsSeparatedChineseAddedTokens(t *testing.T) {
-	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,4 +109,11 @@ func TestQwenCounterKeepsSeparatedChineseAddedTokens(t *testing.T) {
 	if len(tokens) != 3 || tokens[0] != "我" || tokens[1] != "a" || tokens[2] != "未" {
 		t.Fatalf("tokens = %#v, want [我 a 未]", tokens)
 	}
+}
+
+func qwenTokenizerTestPath() string {
+	if value := os.Getenv("QWEN_TOKENIZER_PATH"); value != "" {
+		return value
+	}
+	return filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json")
 }

@@ -9,13 +9,15 @@ import (
 
 type fakeManifestStore struct {
 	version    Version
+	builds     []BuildIdentity
 	claimCalls int
 	saved      []ChunkManifest
 	failed     string
 	markCtxErr error
 }
 
-func (s *fakeManifestStore) FindOrCreateVersion(context.Context, BuildIdentity) (Version, error) {
+func (s *fakeManifestStore) FindOrCreateVersion(_ context.Context, build BuildIdentity) (Version, error) {
+	s.builds = append(s.builds, build)
 	return s.version, nil
 }
 func (s *fakeManifestStore) ClaimBuild(context.Context, int64) error { s.claimCalls++; return nil }
@@ -93,6 +95,23 @@ func TestIngestionNoopSkipsClaimEmbeddingAndQdrant(t *testing.T) {
 	}
 	if !result.Noop || result.VersionID != 7 || store.claimCalls != 0 || embedder.calls != 0 || index.upsertCalls != 0 {
 		t.Fatalf("unexpected no-op result=%#v store=%#v embed=%d index=%#v", result, store, embedder.calls, index)
+	}
+}
+
+func TestIngestionEmbeddingModelChangesBuildIdentity(t *testing.T) {
+	store := &fakeManifestStore{version: Version{ID: 7, Status: StatusReady}}
+	service := IngestionService{Store: store, Index: &fakeVectorIndex{}, Embedder: &fakeBatchEmbedder{}, Counter: runeTokenCounter{}}
+	first := testIngestRequest()
+	if _, err := service.Ingest(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	second := first
+	second.EmbeddingModel = "nomic-embed-text"
+	if _, err := service.Ingest(context.Background(), second); err != nil {
+		t.Fatal(err)
+	}
+	if len(store.builds) != 2 || store.builds[0].ChunkPolicyHash == store.builds[1].ChunkPolicyHash {
+		t.Fatalf("build identities = %#v, embedding model must affect idempotency", store.builds)
 	}
 }
 

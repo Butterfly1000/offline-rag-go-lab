@@ -31,7 +31,7 @@ func main() {
 	duplicateID := mustChunkID(duplicate)
 
 	policyHash, err := documentingest.ChunkPolicyHash(documentingest.ChunkPolicyIdentity{
-		Format: documentingest.FormatMarkdown, ParserVersion: "markdown-v1", MaxTokens: 160, OverlapLines: 2,
+		Format: documentingest.FormatMarkdown, ParserVersion: "markdown-v1", MaxTokens: 160, OverlapLines: 2, EmbeddingModel: "bge-m3",
 	})
 	if err != nil {
 		log.Fatal(err)

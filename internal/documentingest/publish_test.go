@@ -32,12 +32,28 @@ func (f *fakeSnapshotIndex) SwitchAlias(_ context.Context, _ string, from, to st
 }
 
 type fakePublicationStore struct {
+	validateErr error
 	activateErr error
-	activated   bool
+	validated   []SnapshotVersion
+	activated   []SnapshotVersion
+	active      map[int64]int64
 }
 
-func (f *fakePublicationStore) ActivateVersion(context.Context, int64, int64) error {
-	f.activated = true
+func (f *fakePublicationStore) ValidateSnapshotVersions(_ context.Context, _ string, _ string, versions []SnapshotVersion) error {
+	f.validated = append([]SnapshotVersion(nil), versions...)
+	return f.validateErr
+}
+
+func (f *fakePublicationStore) ActivateSnapshot(_ context.Context, _ string, _ string, versions []SnapshotVersion) error {
+	f.activated = append([]SnapshotVersion(nil), versions...)
+	if f.active != nil {
+		for sourceID := range f.active {
+			delete(f.active, sourceID)
+		}
+		for _, version := range versions {
+			f.active[version.DocumentSourceID] = version.VersionID
+		}
+	}
 	return f.activateErr
 }
 
@@ -88,7 +104,7 @@ func TestPublisherActivateRejectsStaleReportAndReportsReconciliation(t *testing.
 	fresh := stale
 	fresh.VerifiedAt = now
 	result, err := publisher.Activate(context.Background(), ActivateRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: snapshot, Verification: fresh})
-	if err == nil || !result.AliasSwitched || !result.ReconciliationRequired || !store.activated {
+	if err == nil || !result.AliasSwitched || !result.ReconciliationRequired || len(store.activated) != 1 {
 		t.Fatalf("result=%#v error=%v", result, err)
 	}
 }
@@ -96,8 +112,88 @@ func TestPublisherActivateRejectsStaleReportAndReportsReconciliation(t *testing.
 func TestPublisherRollbackRequiresExpectedCurrentAlias(t *testing.T) {
 	index := validSnapshotIndex()
 	publisher := Publisher{Index: index, Store: &fakePublicationStore{}, Now: time.Now}
-	err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: "unexpected", To: "offline_rag_document_ingestion_lab_v1"})
+	_, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: "unexpected", Snapshot: rollbackSnapshot()})
 	if err == nil || len(index.switches) != 0 {
 		t.Fatalf("error=%v switches=%v", err, index.switches)
 	}
+}
+
+func TestPublisherRollbackUpdatesAliasAndMySQLActiveVersions(t *testing.T) {
+	index := validSnapshotIndex()
+	index.alias = "offline_rag_document_ingestion_lab_v2"
+	store := &fakePublicationStore{}
+	publisher := Publisher{Index: index, Store: store, Now: time.Now}
+
+	result, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: rollbackSnapshot()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.AliasSwitched || !result.MySQLActivated || result.ReconciliationRequired {
+		t.Fatalf("result=%#v", result)
+	}
+	if len(store.activated) != 1 || store.activated[0].VersionID != 1 || index.alias != "offline_rag_document_ingestion_lab_v1" {
+		t.Fatalf("activated=%#v alias=%q", store.activated, index.alias)
+	}
+}
+
+func TestPublisherRollbackClearsSourcesMissingFromTargetSnapshot(t *testing.T) {
+	index := validSnapshotIndex()
+	index.alias = "offline_rag_document_ingestion_lab_v2"
+	store := &fakePublicationStore{active: map[int64]int64{1: 2, 2: 3}}
+	publisher := Publisher{Index: index, Store: store, Now: time.Now}
+
+	result, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: rollbackSnapshot()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MySQLActivated || len(store.active) != 1 || store.active[1] != 1 {
+		t.Fatalf("result=%#v active=%#v", result, store.active)
+	}
+}
+
+func TestPublisherRollbackRejectsSnapshotOwnershipBeforeAliasSwitch(t *testing.T) {
+	index := validSnapshotIndex()
+	index.alias = "offline_rag_document_ingestion_lab_v2"
+	store := &fakePublicationStore{validateErr: errors.New("version belongs to another scope")}
+	publisher := Publisher{Index: index, Store: store, Now: time.Now}
+
+	_, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: rollbackSnapshot()})
+	if err == nil || len(index.switches) != 0 || len(store.activated) != 0 {
+		t.Fatalf("error=%v switches=%v activated=%#v", err, index.switches, store.activated)
+	}
+}
+
+func TestPublisherRollbackRejectsDuplicateSourceBeforeAliasSwitch(t *testing.T) {
+	index := validSnapshotIndex()
+	index.alias = "offline_rag_document_ingestion_lab_v2"
+	store := &fakePublicationStore{}
+	publisher := Publisher{Index: index, Store: store, Now: time.Now}
+	snapshot := rollbackSnapshot()
+	snapshot.Versions = []SnapshotVersion{{DocumentSourceID: 1, VersionID: 1}, {DocumentSourceID: 1, VersionID: 2}}
+	snapshot.VersionID = 0
+	snapshot.DocumentSourceID = 0
+
+	_, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: snapshot})
+	if err == nil || len(index.switches) != 0 || len(store.validated) != 0 {
+		t.Fatalf("error=%v switches=%v validated=%#v", err, index.switches, store.validated)
+	}
+}
+
+func TestPublisherRollbackReportsMySQLReconciliationAfterAliasSwitch(t *testing.T) {
+	index := validSnapshotIndex()
+	index.alias = "offline_rag_document_ingestion_lab_v2"
+	store := &fakePublicationStore{activateErr: errors.New("mysql unavailable")}
+	publisher := Publisher{Index: index, Store: store, Now: time.Now}
+
+	result, err := publisher.Rollback(context.Background(), RollbackRequest{Alias: "offline_rag_document_ingestion_lab_active", From: index.alias, Snapshot: rollbackSnapshot()})
+	if err == nil || !result.AliasSwitched || !result.ReconciliationRequired || result.MySQLActivated {
+		t.Fatalf("result=%#v error=%v", result, err)
+	}
+}
+
+func rollbackSnapshot() SnapshotManifest {
+	snapshot := validSnapshot()
+	snapshot.VersionID = 1
+	snapshot.Collection = "offline_rag_document_ingestion_lab_v1"
+	return snapshot
 }

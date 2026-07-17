@@ -173,4 +173,5 @@ content 而不是模型实际收到的完整 prompt。
 
 第 29-33 节已实现并通过本地真实验证，但用户尚未逐节确认学会。alias 当前应指向
 `offline_rag_document_ingestion_lab_v2`，v1/v2 都必须保留。12 个 Golden Cases 当前全部
-通过；不得把实现状态写成用户已学会，不得删除物理 collection，不得 push。
+通过；不得把实现状态写成用户已学会，不得删除物理 collection。只有用户明确要求并
+完成 push review 后才能 push。

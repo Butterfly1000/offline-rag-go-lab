@@ -24,7 +24,7 @@
 - Modify: `docs/teaching/qwen-message-format-sop.md`
 
 **Interfaces:**
-- Consumes: `go.mod` 的本地 replace、`assets/tokenizers/qwen2/tokenizer.json`、现有 Go 测试和 demo
+- Consumes: `go.mod` 的本地 replace、bootstrap 后或 `RECENT_CHAT_TOKENIZER_PATH` 指定的 `tokenizer.json`、现有 Go 测试和 demo
 - Produces: `sh scripts/regression/lesson-08.sh`，失败时返回非零状态并指出失败环节
 
 - [x] **Step 1: 编写回归脚本**
