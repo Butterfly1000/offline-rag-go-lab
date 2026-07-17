@@ -233,11 +233,31 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 这一章推荐拆成下面几段：
 
-1. 定义生产文档 record、版本、source scope 和稳定 chunk identity
+1. 定义生产文档 record、版本、source scope 和稳定 chunk identity（第 29 节已实现验证）
 2. 实现 Markdown/代码的结构化 chunking 与可运行 ingestion SOP
 3. 实现幂等更新、删除、失败重试和 alias rebuild
 4. 建立 retrieval 黄金查询与隔离测试集
 5. 用评估结果迭代 chunking、quota 和 reranking
+
+### 已实现并验证、尚未确认学会：第 29 节 Document Identity
+
+实现状态：
+
+1. 定义 `(knowledge_scope, document_id)` 逻辑文档身份
+2. 用规范化源文件 SHA256 和 chunk policy hash 确定版本构建
+3. 用结构路径、内容 hash 和重复序号生成稳定 chunk ID
+4. 证明未变化 chunk 跨版本保持 ID，内容变化、章节移动和重复块会改变 ID
+5. 定义 `pending -> building -> ready -> active/failed` 封闭状态机
+6. 提供三张 MySQL 表的幂等 schema，但尚未在真实数据库应用
+
+文档：
+
+- [document-identity-version-sop.md](/offline-rag-go-lab/docs/teaching/document-identity-version-sop.md:1)
+- [00-document-ingestion-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-document-ingestion-batch-operation-log.md:1)
+
+注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
+
+下一实现节是第 30 节：Markdown 与 Go 源码结构化分块和真实 tokenizer 上限。
 
 已有概念入口文档：
 
