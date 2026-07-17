@@ -167,8 +167,9 @@ content 而不是模型实际收到的完整 prompt。
 - `docs/teaching/document-identity-version-sop.md`
 - `docs/teaching/structured-document-chunking-sop.md`
 - `docs/teaching/idempotent-document-ingestion-sop.md`
+- `docs/teaching/document-snapshot-alias-sop.md`
 - `docs/teaching/00-document-ingestion-batch-operation-log.md`
 
-第 29-31 节已实现并通过本地真实验证，但用户尚未逐节确认学会。下一实现节是第 32 节
-snapshot rebuild、Qdrant alias 原子切换和只切 alias 的回滚；不得修改既有三套 collection，
-不得删除物理 collection，不得 push。
+第 29-32 节已实现并通过本地真实验证，但用户尚未逐节确认学会。alias 当前应指向
+`offline_rag_document_ingestion_lab_v2`，v1/v2 都必须保留。下一实现节是第 33 节 Golden
+Cases 检索评估；不得修改既有三套 collection，不得删除物理 collection，不得 push。

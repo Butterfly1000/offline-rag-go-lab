@@ -222,3 +222,17 @@ keyword indexes。
 2. failed 写回使用脱离 caller cancellation、上限 5 秒的 cleanup context
 3. `LastInsertId=0,nil` 返回明确错误，不生成 `%!w(<nil>)`
 4. collection 在领域和 CLI 两层限制为隔离 ingestion 前缀/配置值
+
+## 第 32 节：Verified Snapshot、Alias 与回滚
+
+RED：publication/alias API 不存在导致编译失败。GREEN 后真实构建 v1=10 points、v2=11 points，逐 point 对账通过。
+
+真实发布顺序为 v1 -> v2 -> 回滚 v1 -> 恢复 v2；最终 alias 指向 v2，两套物理 collection 均保留，collection 删除操作为 0。
+
+Review/调试修复：
+
+1. 聚合多个文档，manifest digest 改按稳定 point ID 排序，避免重复 ordinal 非确定性
+2. 本地 Qdrant 只支持全局 `GET /aliases`，新增真实响应 RED/GREEN
+3. MySQL active version 重复写相同值会返回 affected=0，新增读取当前值的幂等确认
+4. alias 切换前验证 current=from；一次 action 内 delete alias + create alias
+5. alias 成功、MySQL 失败时显式报告 reconciliation，不伪装分布式事务

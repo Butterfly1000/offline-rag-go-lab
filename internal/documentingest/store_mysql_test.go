@@ -28,6 +28,15 @@ func TestPositiveLastInsertIDRejectsZeroWithoutFormattingNilAsWrappedError(t *te
 	var _ sql.Result = fakeSQLResult{}
 }
 
+func TestValidateIdempotentActiveVersionAcceptsUnchangedTarget(t *testing.T) {
+	if err := validateIdempotentActiveVersion(0, 5, 5); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateIdempotentActiveVersion(0, 4, 5); err == nil {
+		t.Fatal("different current version must fail")
+	}
+}
+
 func TestBoundDocumentBuildErrorUsesUTF8ByteLimit(t *testing.T) {
 	value := boundDocumentBuildError(strings.Repeat("错", 1000))
 	if len(value) > 2048 || !strings.Contains(value, "...") {

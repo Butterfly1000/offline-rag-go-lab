@@ -128,6 +128,125 @@ func (s *MySQLManifestStore) MarkFailed(ctx context.Context, versionID int64, re
 	return requireOneAffected(result, "mark document build failed")
 }
 
+func (s *MySQLManifestStore) LoadReadySnapshot(ctx context.Context, scope, collection string) (SnapshotManifest, error) {
+	if s == nil || s.db == nil {
+		return SnapshotManifest{}, fmt.Errorf("MySQL manifest database is required")
+	}
+	if _, err := normalizeIdentifier("knowledge_scope", scope); err != nil {
+		return SnapshotManifest{}, err
+	}
+	if err := validateLabCollection(collection); err != nil {
+		return SnapshotManifest{}, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT v.id, v.document_source_id
+        FROM document_versions v JOIN document_sources s ON s.id=v.document_source_id
+        WHERE s.knowledge_scope=? AND v.target_collection=? AND v.status IN ('ready','active')
+        ORDER BY v.document_source_id, v.id DESC`, scope, collection)
+	if err != nil {
+		return SnapshotManifest{}, err
+	}
+	defer rows.Close()
+	var versions []SnapshotVersion
+	seen := map[int64]bool{}
+	for rows.Next() {
+		var version SnapshotVersion
+		if err := rows.Scan(&version.VersionID, &version.DocumentSourceID); err != nil {
+			return SnapshotManifest{}, err
+		}
+		if !seen[version.DocumentSourceID] {
+			seen[version.DocumentSourceID] = true
+			versions = append(versions, version)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return SnapshotManifest{}, err
+	}
+	if len(versions) == 0 {
+		return SnapshotManifest{}, fmt.Errorf("no ready snapshot versions for scope %q collection %q", scope, collection)
+	}
+	var chunks []ChunkManifest
+	for _, version := range versions {
+		chunkRows, err := s.db.QueryContext(ctx, `SELECT chunk_id, structure_kind, heading_path, ordinal, content_hash, token_count, qdrant_point_id FROM document_chunk_manifests WHERE document_version_id=? ORDER BY ordinal`, version.VersionID)
+		if err != nil {
+			return SnapshotManifest{}, err
+		}
+		for chunkRows.Next() {
+			var chunk ChunkManifest
+			if err := chunkRows.Scan(&chunk.ChunkID, &chunk.StructureKind, &chunk.HeadingPath, &chunk.Ordinal, &chunk.ContentHash, &chunk.TokenCount, &chunk.QdrantPointID); err != nil {
+				chunkRows.Close()
+				return SnapshotManifest{}, err
+			}
+			chunks = append(chunks, chunk)
+		}
+		if err := chunkRows.Err(); err != nil {
+			chunkRows.Close()
+			return SnapshotManifest{}, err
+		}
+		chunkRows.Close()
+	}
+	if len(chunks) == 0 {
+		return SnapshotManifest{}, fmt.Errorf("ready snapshot has no chunk manifests")
+	}
+	return SnapshotManifest{KnowledgeScope: scope, Collection: collection, Versions: versions, Chunks: chunks, ManifestDigest: ManifestDigest(chunks)}, nil
+}
+
+func (s *MySQLManifestStore) ActivateVersion(ctx context.Context, sourceID, versionID int64) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("MySQL manifest database is required")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var status VersionStatus
+	if err := tx.QueryRowContext(ctx, `SELECT status FROM document_versions WHERE id=? AND document_source_id=? FOR UPDATE`, versionID, sourceID).Scan(&status); err != nil {
+		return err
+	}
+	if status != StatusReady && status != StatusActive {
+		return fmt.Errorf("version %d status %q cannot be activated", versionID, status)
+	}
+	if status == StatusReady {
+		result, err := tx.ExecContext(ctx, `UPDATE document_versions SET status='active', activated_at=CURRENT_TIMESTAMP(6) WHERE id=? AND document_source_id=? AND status='ready'`, versionID, sourceID)
+		if err != nil {
+			return err
+		}
+		if err := requireOneAffected(result, "activate document version"); err != nil {
+			return err
+		}
+	}
+	result, err := tx.ExecContext(ctx, `UPDATE document_sources SET active_version_id=? WHERE id=?`, versionID, sourceID)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		var current sql.NullInt64
+		if err := tx.QueryRowContext(ctx, `SELECT active_version_id FROM document_sources WHERE id=? FOR UPDATE`, sourceID).Scan(&current); err != nil {
+			return err
+		}
+		if !current.Valid {
+			return fmt.Errorf("document source %d has no active version", sourceID)
+		}
+		if err := validateIdempotentActiveVersion(affected, current.Int64, versionID); err != nil {
+			return err
+		}
+	} else if affected != 1 {
+		return fmt.Errorf("set active document version affected %d rows, want 1", affected)
+	}
+	return tx.Commit()
+}
+
+func validateIdempotentActiveVersion(affected, current, expected int64) error {
+	if affected == 1 || affected == 0 && current == expected {
+		return nil
+	}
+	return fmt.Errorf("active document version is %d, want %d", current, expected)
+}
+
 func validateBuildIdentity(build BuildIdentity) error {
 	if _, err := normalizeIdentifier("knowledge_scope", build.KnowledgeScope); err != nil {
 		return err

@@ -293,7 +293,15 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
 
-下一实现节是第 32 节：验证新 snapshot 后切换 Qdrant alias，并支持无删除回滚。
+### 已实现并验证、尚未确认学会：第 32 节 Snapshot Publication
+
+已完成 v1/v2 完整语料 snapshot、逐 point verification、alias 原子切换、无删除回滚和 MySQL activation/reconciliation 边界。真实验证 v1=10 points、v2=11 points，最终 alias 指向 v2。
+
+文档：
+
+- [document-snapshot-alias-sop.md](/offline-rag-go-lab/docs/teaching/document-snapshot-alias-sop.md:1)
+
+注意：代码已实现验证，用户尚未确认学会。下一实现节是第 33 节 Golden Cases 检索评估。
 
 已有概念入口文档：
 
