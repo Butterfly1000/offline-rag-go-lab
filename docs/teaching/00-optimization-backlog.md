@@ -126,6 +126,39 @@
 
 目标结果：记录计划值和 Ollama 实际 usage，形成误差与利用率指标。
 
+### 13. 本地 tokenizer fork 与官方 runtime 持续对照
+
+为什么需要：第 30 节真实发现 regexp2 offset、already-tokenized split 和 added-token
+匹配顺序三个问题；本地回归已修复“非空中文得到 0 tokens”，但当前资产仍未证明与
+Ollama `qwen:7b` 同源。
+
+何时再做：取得上游明确 revision 的 tokenizer 资产，或升级本地 tokenizer fork 时。
+
+目标结果：在 Hugging Face/Rust reference runtime 与 Go fork 间对照中文、英文、代码、
+added token、回溯正则和完整 prompt 的 token IDs；任何 fork 更新必须先过固定黄金集。
+
+## Document Ingestion 优化项
+
+### 1. Oversized text 精确切分性能
+
+为什么需要：BPE token 数不保证随字符长度单调，当前只对已经超限的 unit 枚举前缀并
+实测，保证正确但最坏复杂度较高。
+
+何时再做：大型单行代码、压缩 JSON 或超长无标点文本 benchmark 显示该路径成为瓶颈时。
+
+目标结果：在不引入单调假设的前提下复用编码边界或 tokenizer offsets，并用 benchmark
+证明吞吐提升；优化前后 chunk 文本和 token 上限黄金结果必须一致。
+
+### 2. 更多结构解析器
+
+为什么需要：当前只支持 Markdown ATX heading/fenced code 和 Go AST，不能覆盖 PDF、
+Office、HTML 或其他编程语言。
+
+何时再做：retrieval golden set 出现明确由格式缺失导致的召回问题时。
+
+目标结果：按真实数据优先级增加 parser；多语言代码优先评估 tree-sitter，不用通用行
+规则假装理解语法。
+
 ## Session Summary 优化项
 
 ### 1. 触发阈值的运行数据校准

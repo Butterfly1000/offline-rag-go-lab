@@ -60,7 +60,9 @@ tokenizer 版本中做了定向兼容：
 
 - 普通正则继续使用标准库 regexp
 - 检测到回溯引用时使用 github.com/dlclark/regexp2
-- 保持 tokenizer 原有的匹配接口和 offset 行为
+- 把 regexp2 的 rune offset 显式转换为 tokenizer 要求的 UTF-8 byte offset
+- normalize 未附 token 的 split，同时保留 already-tokenized added vocabulary split
+- added-token 冲突使用 leftmost-longest，不能按 token ID 全局打乱文本顺序
 
 相关代码：
 
@@ -74,6 +76,17 @@ tokenizer 版本中做了定向兼容：
 2. 是否使用了本地 replace 版本
 3. 报错是否来自 tokenizer.json 中的正则规则
 4. 是否缺少本地 tokenizer 目录或 regexp2 依赖
+
+不能只验证“文件加载成功”。还必须运行中文回归：
+
+    go test ./internal/tokenizerdemo -run 'Test(Regexp2|QwenCounter|AddedVocabulary)'
+
+当前资产的已知回归值包括：
+
+- `我` 为 1 token，id `56023`
+- `我叫小黄，这个项目是 Go 写的。` 为 15 tokens
+
+如果再次出现非空中文 `0 tokens`，优先检查本地 fork 是否完整，不要用字符估算掩盖。
 
 当前项目已在 Go 1.26 环境验证通过。这不能证明所有 tokenizer 都兼容，
 但能证明“Go 1.26 必然不兼容本项目”是不准确的判断。
@@ -122,7 +135,8 @@ tokenizer 指纹和完整 chat template 需要单独验证。
 
 ### 代码加载成功但 token 结果异常
 
-继续检查 tokenizer 资产来源、模型匹配、完整 chat template，以及是否只计算
+先执行上述中文/added-token 回归。回归失败说明 Go tokenizer 执行链仍有问题；回归
+通过后，再检查 tokenizer 资产来源、模型匹配、完整 chat template，以及是否只计算
 content 而不是模型实际收到的完整 prompt。
 
 ## 7. 给新 AI 的固定要求
@@ -147,4 +161,3 @@ content 而不是模型实际收到的完整 prompt。
 - 为什么 Go 标准 regexp 不能直接处理当前 tokenizer 的某些规则
 - tokenizer 代码和 tokenizer 资产分别如何验证
 - 下一步应该继续教学、运行验证还是修改代码
-

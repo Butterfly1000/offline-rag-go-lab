@@ -1,0 +1,24 @@
+// Package course demonstrates document ingestion behavior.
+package course
+
+import "fmt"
+
+// Version describes one immutable document build.
+type Version struct {
+	ContentHash string
+	Status      string
+}
+
+// Activate changes a verified ready version into the active version.
+func (v *Version) Activate() error {
+	if v.Status != "ready" {
+		return fmt.Errorf("version status %q is not ready", v.Status)
+	}
+	v.Status = "active"
+	return nil
+}
+
+// ChunkID returns the already validated stable chunk identity.
+func ChunkID(value string) string {
+	return value
+}

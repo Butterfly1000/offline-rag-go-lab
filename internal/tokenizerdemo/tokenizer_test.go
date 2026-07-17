@@ -41,3 +41,71 @@ func TestCounterUsesLoadedTokenizerToCountText(t *testing.T) {
 		t.Fatalf("CountText() ids = %v, want [1]", ids)
 	}
 }
+
+func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
+	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := "版本从 pending 进入 building。构建成功后进入 ready，发布后才成为 active；构建失败则进入 failed 并允许重试。"
+	count, tokens, ids, err := counter.CountText(text)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 41 || len(tokens) != count || len(ids) != count {
+		t.Fatalf("CountText() count=%d tokens=%d ids=%d, want 41", count, len(tokens), len(ids))
+	}
+}
+
+func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
+	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	count, tokens, ids, err := counter.CountText("我")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := counter.tokenizer.EncodeSingleSequence(tokenizer.NewInputSequence("我"), 0, tokenizer.Byte)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 || len(tokens) != 1 || len(ids) != 1 {
+		id, found := counter.tokenizer.TokenToId("我")
+		t.Fatalf("CountText(我) count=%d tokens=%v ids=%v raw=%v token_id=%d found=%t, want one added token", count, tokens, ids, raw.Tokens, id, found)
+	}
+}
+
+func TestAddedVocabularySelectsLeftmostLongestMatches(t *testing.T) {
+	model, err := wordlevel.New(map[string]int{"<unk>": 0}, "<unk>")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := tokenizer.NewTokenizer(model)
+	tk.AddSpecialTokens([]tokenizer.AddedToken{
+		tokenizer.NewAddedToken("a", true),
+		tokenizer.NewAddedToken("ab", true),
+		tokenizer.NewAddedToken("b", true),
+	})
+	encoding, err := tk.EncodeSingle("ab", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(encoding.Tokens) != 1 || encoding.Tokens[0] != "ab" {
+		t.Fatalf("tokens = %#v, want longest leftmost [ab]", encoding.Tokens)
+	}
+}
+
+func TestQwenCounterKeepsSeparatedChineseAddedTokens(t *testing.T) {
+	counter, err := LoadCounter(filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tokens, _, err := counter.CountText("我a未")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tokens) != 3 || tokens[0] != "我" || tokens[1] != "a" || tokens[2] != "未" {
+		t.Fatalf("tokens = %#v, want [我 a 未]", tokens)
+	}
+}

@@ -364,23 +364,6 @@ type idOffsets struct {
 	offsets []int
 }
 
-// helper functions to sort idOffsets
-// By implement sort interface of package sort
-
-// byStart sort by offset.Start
-type byStart []idOffsets
-
-func (s byStart) Len() int           { return len(s) }
-func (s byStart) Less(i, j int) bool { return s[i].offsets[0] < s[j].offsets[0] }
-func (s byStart) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-// byId sort by id
-type byId []idOffsets
-
-func (bi byId) Len() int           { return len(bi) }
-func (bi byId) Less(i, j int) bool { return bi[i].id < bi[j].id }
-func (bi byId) Swap(i, j int)      { bi[i], bi[j] = bi[j], bi[i] }
-
 // findMatches finds any AddedToken in the given sentence, using the provided MatchingSet.
 // This method returns a list "splits", each of them being a pair of Offsets
 // and an optional ID if it is an AddedToken. The list of splits cover the entire input string.
@@ -403,43 +386,28 @@ func (av *AddedVocabulary) findMatches(sentence string, splitRe matchingSet) (re
 		}
 	}
 
-	// Sort id-offsets by start then by pattern id
-	sort.Sort(byStart(ioPairs))
-	sort.Sort(byId(ioPairs))
+	// Added-token extraction uses leftmost-longest matching. The old code sorted
+	// once by position and then globally by pattern ID, which let a token later in
+	// the sentence suppress an earlier token. Keep text order first, prefer the
+	// longest token at the same start, and use pattern ID only as a stable tie-break.
+	sort.Slice(ioPairs, func(i, j int) bool {
+		if ioPairs[i].offsets[0] != ioPairs[j].offsets[0] {
+			return ioPairs[i].offsets[0] < ioPairs[j].offsets[0]
+		}
+		if ioPairs[i].offsets[1] != ioPairs[j].offsets[1] {
+			return ioPairs[i].offsets[1] > ioPairs[j].offsets[1]
+		}
+		return ioPairs[i].id < ioPairs[j].id
+	})
 
-	// Select the matches, if they overlap, keep them
-	var (
-		i              int         = 0
-		currentOffsets int         = 0
-		splits         []idOffsets = make([]idOffsets, 0)
-	)
-
-	for i < len(ioPairs) {
-		ioPair := ioPairs[i]
-
-		// current match is before the current offset, skip it
-		if ioPair.offsets[0] < currentOffsets {
-			i++
+	currentOffset := 0
+	splits := make([]idOffsets, 0, len(ioPairs))
+	for _, pair := range ioPairs {
+		if pair.offsets[0] < currentOffset {
 			continue
 		}
-
-		// Find out whether having overlapping neighbours.
-		// If so, keep the one with lowest Idx. All other will be skipped
-		// because `currentOffsets` will have been increased.
-		if i+1 < len(ioPairs) {
-			overlapPairs := ioPairs[i:]
-			sort.Sort(byId(overlapPairs))
-			lowestPair := overlapPairs[0] // lowest Id one
-			splits = append(splits, lowestPair)
-			currentOffsets = ioPair.offsets[1]
-			i++
-			continue
-		}
-
-		// Not found overlap neighbours. Just apply itself
-		splits = append(splits, ioPair)
-		currentOffsets = ioPair.offsets[1]
-		i++
+		splits = append(splits, pair)
+		currentOffset = pair.offsets[1]
 	}
 
 	// Also, insert the splits in-between added tokens, to split the entire string

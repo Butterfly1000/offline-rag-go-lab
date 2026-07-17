@@ -234,7 +234,7 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 这一章推荐拆成下面几段：
 
 1. 定义生产文档 record、版本、source scope 和稳定 chunk identity（第 29 节已实现验证）
-2. 实现 Markdown/代码的结构化 chunking 与可运行 ingestion SOP
+2. 实现 Markdown/代码的结构化 chunking 与可运行 ingestion SOP（第 30 节已实现验证）
 3. 实现幂等更新、删除、失败重试和 alias rebuild
 4. 建立 retrieval 黄金查询与隔离测试集
 5. 用评估结果迭代 chunking、quota 和 reranking
@@ -257,7 +257,26 @@ Long-term Memory Item 第 19-23 节已经完成独立真实闭环：
 
 注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
 
-下一实现节是第 30 节：Markdown 与 Go 源码结构化分块和真实 tokenizer 上限。
+### 已实现并验证、尚未确认学会：第 30 节 Structured Chunking
+
+实现状态：
+
+1. Markdown 按 ATX heading stack、段落和 fenced code 识别结构
+2. Go 使用 `go/parser` 识别 package/import/type/function，并保留 doc comment
+3. 所有 chunk 使用真实 tokenizer 强制 `max_tokens`，不使用字符估算
+4. oversized 段落按句子/精确前缀切分，代码和声明按完整行及受控 overlap 切分
+5. overlap 无法携带新行时不产生重复-only chunk
+6. 修复本地 tokenizer fork 的 rune/byte offset、added split 丢失和全局 ID 重排问题
+7. 用真实 fixture 证明 Markdown/Go 输出结构、token 数和稳定 chunk ID
+
+文档：
+
+- [structured-document-chunking-sop.md](/offline-rag-go-lab/docs/teaching/structured-document-chunking-sop.md:1)
+
+注意：以上只代表代码已实现和机器已验证。用户尚未确认“懂了”，不能记录为已学会。
+
+下一实现节是第 31 节：真实 MySQL manifest、Ollama batch embedding 和隔离 Qdrant
+collection 的幂等 ingestion。
 
 已有概念入口文档：
 

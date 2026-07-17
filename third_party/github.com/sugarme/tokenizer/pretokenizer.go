@@ -101,11 +101,13 @@ func (pt *PreTokenizedString) Normalize(nFn func(*normalizer.NormalizedString) *
 	var nSplits []Split
 
 	for _, split := range pt.splits {
+		newSplit := split
 		if split.tokens == nil {
-			newSplit := split
 			newSplit.normalized = nFn(split.normalized)
-			nSplits = append(nSplits, newSplit)
 		}
+		// Added vocabulary splits already carry tokens and must bypass further
+		// normalization, not disappear from the pre-tokenized sequence.
+		nSplits = append(nSplits, newSplit)
 	}
 
 	pt.splits = nSplits

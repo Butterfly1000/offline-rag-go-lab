@@ -219,10 +219,14 @@ func findMatchesRegexp2(re *regexp2.Regexp, inside string) []OffsetsMatch {
 		currIndex int
 		subs      []OffsetsMatch
 	)
+	// regexp2 reports Index and Length in runes, while NormalizedString ranges
+	// and Go regexp offsets use UTF-8 bytes. Convert once so mixed Chinese/ASCII
+	// input cannot be sliced at the wrong boundary and silently lose tokens.
+	byteOffsets := runeByteOffsets(inside)
 
 	for match != nil {
-		start := match.Index
-		end := match.Index + match.Length
+		start := byteOffsets[match.Index]
+		end := byteOffsets[match.Index+match.Length]
 
 		if start > currIndex {
 			subs = append(subs, OffsetsMatch{
@@ -251,6 +255,14 @@ func findMatchesRegexp2(re *regexp2.Regexp, inside string) []OffsetsMatch {
 	}
 
 	return subs
+}
+
+func runeByteOffsets(value string) []int {
+	offsets := make([]int, 0, len([]rune(value))+1)
+	for byteOffset := range value {
+		offsets = append(offsets, byteOffset)
+	}
+	return append(offsets, len(value))
 }
 
 // FindMatches implements Pattern interface for RegexpPattern

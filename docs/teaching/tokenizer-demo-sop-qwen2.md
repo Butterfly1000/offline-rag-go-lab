@@ -313,10 +313,18 @@ env GOCACHE=/private/tmp/offline-rag-go-lab-gocache GOSUMDB=off go run -mod=mod 
 
 - 把 `github.com/sugarme/tokenizer` 做成本地 replace
 - 用 `regexp2` 兼容这类正则
+- 把 `regexp2` 的 rune offset 转换成 UTF-8 byte offset
+- 保留已经由 added vocabulary 产生 token 的 split
+- added-token 冲突按 leftmost-longest 选择，不按 ID 打乱文本位置
 
 这一步非常值得记住：
 
 **拿到 tokenizer.json，不等于任意语言库都能零成本直接吃进去。**
+
+后续结构化分块实践真实发现：只让文件“能加载”还不够。旧兼容代码会让部分非空中文
+返回 `0 tokens`，并曾把 `我叫小黄，这个项目是 Go 写的。` 错算为 8。修复执行链后，
+当前资产的结果是 15。初始化必须运行 `go test ./internal/tokenizerdemo` 的中文和
+added-token 回归，不能继续引用旧的 8-token 输出。
 
 ---
 
