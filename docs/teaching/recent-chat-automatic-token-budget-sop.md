@@ -216,6 +216,24 @@ Ollama `/api/chat` 支持 `options` 运行参数，`num_predict` 表示最大生
 
 ## 6. 真实运行 SOP
 
+### SOP 0：回归模式选择
+
+默认只读回归：
+
+```bash
+sh scripts/regression/lessons-11-12.sh
+```
+
+服务已经启动后，执行真实写库回归：
+
+```bash
+sh scripts/regression/lessons-11-12.sh --live
+```
+
+`--live` 使用独立 `regression-lesson-12-*` session，并向 MySQL 写入一轮 user/assistant
+消息。当前 `cmd/recent-chat` 已接入后续 Dual Retrieval，因此 live 模式还要求本地
+Qdrant 和 embedding 模型可用；这是当前完整应用依赖，不是第 12 节原始算法新增的依赖。
+
 ### SOP 1：启动依赖
 
 确认：

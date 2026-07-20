@@ -211,7 +211,30 @@ Qdrant。当前资产的黄金结果是完整 conversation `100` tokens、去掉
 严格窗口测试不依赖真实数据库。它用 fake counter 固定每条格式化消息的成本，证明
 最新消息超过预算时窗口为空，而不是为了“至少一条历史”突破容量。
 
-## 6. 后续章节如何记录类似问题
+## 6. 第 11-12 节：Ollama Context 与真实自动预算
+
+默认只读执行：
+
+```bash
+sh scripts/regression/lessons-11-12.sh
+```
+
+真实 `/chat` 执行：
+
+```bash
+sh scripts/regression/lessons-11-12.sh --live
+```
+
+默认模式需要 Go、Tokenizer、Ollama 和 `qwen:7b`，不写 MySQL。`--live` 需要已启动的
+recent-chat，并会写入独立测试 session。由于当前应用已经继续接入 Dual Retrieval，
+live 模式实际还依赖 Qdrant 和 embedding 模型；如果只想判断第 11 节公式，不应先被
+这些后续依赖阻塞，使用默认模式即可。
+
+当前 `qwen:7b` 的回归值是 `context=32768`、`fixed=56`、`output=2048`、
+`available=30664`。必须同时满足四项加法恒等式。旧记录 `fixed=64` 是 Tokenizer 修复
+前的结果，不能继续使用。
+
+## 7. 后续章节如何记录类似问题
 
 每一节不必都创建新文档。出现跨环境问题时，按以下格式追加到本文：
 

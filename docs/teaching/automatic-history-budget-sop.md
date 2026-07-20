@@ -93,6 +93,15 @@ return AutomaticPlan{}, fmt.Errorf("read model context length: %w", err)
 
 ## 3. 实践 SOP
 
+### SOP 0：运行第 11-12 节只读回归
+
+```bash
+sh scripts/regression/lessons-11-12.sh
+```
+
+脚本验证 Ollama 模型、context metadata、预算恒等式和超限失败。默认模式不启动
+recent-chat，也不写 MySQL；真实 `/chat` 验证需要显式 `--live`。
+
 ### SOP 1：确认 Ollama 和模型
 
 ```bash
@@ -137,15 +146,15 @@ fixed input + output reserve + available history = context limit
 
 ```text
 Context limit: 32768
-Fixed input tokens: 64
+Fixed input tokens: 56
 Output reserve tokens: 2048
-Available recent history tokens: 30656
+Available recent history tokens: 30664
 ```
 
 核对：
 
 ```text
-64 + 2048 + 30656 = 32768
+56 + 2048 + 30664 = 32768
 ```
 
 ### SOP 3：验证超限失败
@@ -169,8 +178,11 @@ exceeds context limit
 本次超限实测为：
 
 ```text
-fixed input and output reserve (32832) exceeds context limit (32768)
+fixed input and output reserve (32824) exceeds context limit (32768)
 ```
+
+旧值 `64/30656/32832` 来自 Tokenizer 中文执行链修复前。模型 context limit 没有
+变化，变化的是本地固定 prompt 的正确 token 计数。
 
 ### SOP 4：运行测试
 

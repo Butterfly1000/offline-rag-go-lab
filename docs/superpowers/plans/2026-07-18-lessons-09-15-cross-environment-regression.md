@@ -36,9 +36,9 @@
 - Modify: `docs/teaching/automatic-history-budget-sop.md`
 - Modify: `docs/teaching/recent-chat-automatic-token-budget-sop.md`
 
-- [ ] 验证 Ollama、模型、context limit、预算恒等式和超限失败。
-- [ ] 用 `--live` 验证真实 `/chat` 自动预算与冲突参数，不在默认模式写 MySQL。
-- [ ] Review、测试并提交。
+- [x] 验证 Ollama、模型、context limit、预算恒等式和超限失败。
+- [x] 用 `--live` 验证真实 `/chat` 自动预算与冲突参数，不在默认模式写 MySQL。
+- [x] Review、测试并提交。
 
 ### Task 3: 第 13-15 节 Summary 回归
 
