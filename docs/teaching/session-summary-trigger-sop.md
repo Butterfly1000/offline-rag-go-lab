@@ -256,6 +256,15 @@ below_threshold
 
 ## 8. 实践 SOP
 
+### SOP 0：运行第 13-15 节跨环境回归
+
+```bash
+sh scripts/regression/lessons-13-15.sh
+```
+
+脚本检查 summary schema 的 `(session_id, user_id)` 主键、四种 trigger reason 和非法
+统计。它不会执行 SQL；第 15 节会调用本地 Ollama，但不写 MySQL。
+
 ### SOP 1：消息很多，但没有驱逐
 
 ```bash

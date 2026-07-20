@@ -208,12 +208,16 @@ Qdrant。当前资产的黄金结果是完整 conversation `100` tokens、去掉
 不要直接修改预期数字。命令能够运行但黄金值不同，说明两台机器使用的 Tokenizer
 规则或文件 revision 不一致。
 
+第 9-15 节脚本默认要求 Tokenizer SHA256 为
+`b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8`。如果要验证另一份
+已审核资产，必须显式设置 `RECENT_CHAT_TOKENIZER_SHA256`，不能只改黄金数字。
+
 严格窗口测试不依赖真实数据库。它用 fake counter 固定每条格式化消息的成本，证明
 最新消息超过预算时窗口为空，而不是为了“至少一条历史”突破容量。
 
 ## 6. 第 11-12 节：Ollama Context 与真实自动预算
 
-默认只读执行：
+默认非业务写入执行：
 
 ```bash
 sh scripts/regression/lessons-11-12.sh
@@ -225,16 +229,33 @@ sh scripts/regression/lessons-11-12.sh
 sh scripts/regression/lessons-11-12.sh --live
 ```
 
-默认模式需要 Go、Tokenizer、Ollama 和 `qwen:7b`，不写 MySQL。`--live` 需要已启动的
-recent-chat，并会写入独立测试 session。由于当前应用已经继续接入 Dual Retrieval，
-live 模式实际还依赖 Qdrant 和 embedding 模型；如果只想判断第 11 节公式，不应先被
-这些后续依赖阻塞，使用默认模式即可。
+默认模式需要 Go、Tokenizer、Ollama 和 `qwen:7b`，不写业务数据，但会写仓库内
+`.cache`。`--live` 需要已启动的 recent-chat，并会写入独立测试 session。当前请求不
+开启 memory/document retrieval，因此不要求 Qdrant 或 embedding 模型。
 
 当前 `qwen:7b` 的回归值是 `context=32768`、`fixed=56`、`output=2048`、
 `available=30664`。必须同时满足四项加法恒等式。旧记录 `fixed=64` 是 Tokenizer 修复
 前的结果，不能继续使用。
 
-## 7. 后续章节如何记录类似问题
+## 7. 第 13-15 节：Summary 触发、选择与生成
+
+执行：
+
+```bash
+sh scripts/regression/lessons-13-15.sh
+```
+
+这一组不执行 SQL，也不写 MySQL。第 13 节只检查 schema 文件和 trigger policy；第 14
+节读取 Tokenizer 并验证连续驱逐前缀；第 15 节调用本地 Ollama 生成一次摘要。
+
+跨机器最容易混淆的边界：
+
+- MySQL message ID 可以有空洞，watermark 必须取实际最后一条驱逐消息 ID。
+- Token 数依赖同一份 Tokenizer；当前标准选择结果为全部 `129`、驱逐 `86`。
+- 模型摘要措辞不确定，自动回归不能绑定整段中文，只固定非空、无 wrapper 等契约。
+- `session_summaries` 表在第 13 节只是设计依赖；真正写库从第 16 节开始验证。
+
+## 8. 后续章节如何记录类似问题
 
 每一节不必都创建新文档。出现跨环境问题时，按以下格式追加到本文：
 

@@ -93,14 +93,15 @@ return AutomaticPlan{}, fmt.Errorf("read model context length: %w", err)
 
 ## 3. 实践 SOP
 
-### SOP 0：运行第 11-12 节只读回归
+### SOP 0：运行第 11-12 节非业务写入回归
 
 ```bash
 sh scripts/regression/lessons-11-12.sh
 ```
 
-脚本验证 Ollama 模型、context metadata、预算恒等式和超限失败。默认模式不启动
-recent-chat，也不写 MySQL；真实 `/chat` 验证需要显式 `--live`。
+脚本验证 Tokenizer SHA256、Ollama 模型、context metadata、预算恒等式和超限失败。
+默认模式不启动 recent-chat，也不写 MySQL，但会写仓库内 `.cache`；真实 `/chat`
+验证需要显式 `--live`。
 
 ### SOP 1：确认 Ollama 和模型
 

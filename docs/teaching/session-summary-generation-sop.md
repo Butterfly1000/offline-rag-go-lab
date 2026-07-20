@@ -44,6 +44,16 @@ type TextGenerator interface {
 
 ## 4. 实践 SOP
 
+先运行统一回归：
+
+```bash
+sh scripts/regression/lessons-13-15.sh
+```
+
+摘要内容由模型生成，脚本只固定可稳定判断的契约：调用成功、结果非空、常见
+`<updated_summary>` wrapper 已被清理。事实完整性仍应结合本节输入人工检查，不能把某次
+模型措辞写成跨机器固定字符串。
+
 ```bash
 go run ./cmd/summary-generate-demo \
   --model qwen:7b \

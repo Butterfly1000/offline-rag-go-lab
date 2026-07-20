@@ -4,14 +4,14 @@
 
 **Goal:** 为第 9-15 节提供跨机器可执行回归，并把本地资产、Ollama、MySQL 和服务状态问题集中记录为 SOP。
 
-**Architecture:** 按依赖边界拆成三个 shell 脚本：9-10 只依赖 Go 与 Tokenizer；11-12 增加 Ollama，并用显式 `--live` 才访问 `/chat`；13-15 将纯策略、Tokenizer 选择和真实 Ollama 摘要组合。所有脚本复用第 8 节的资产路径约定，不读取或输出数据库密码。
+**Architecture:** 按依赖边界拆成三个 POSIX shell 脚本：9-10 只依赖 Go 与 Tokenizer；11-12 增加 Ollama，并用显式 `--live` 才访问 `/chat`；13-15 将纯策略、Tokenizer 选择和真实 Ollama 摘要组合。所有脚本复用第 8 节的资产路径约定并验证 SHA256，不读取或输出数据库密码。
 
 **Tech Stack:** POSIX shell、Go 1.26、Qwen tokenizer.json、Ollama、可选本地 recent-chat/MySQL
 
 ## Global Constraints
 
 - 不提交 `config/recent-chat.env`、Tokenizer 模型资产或数据库内容。
-- 默认回归不修改 MySQL；只有第 12 节显式 `--live` 会写入独立测试 session。
+- 默认回归不修改业务数据，但会写仓库内 Go build cache 和临时输出；只有第 12 节显式 `--live` 会写入独立测试 session。
 - 每组完成 review 和验证后独立 commit，不 push。
 
 ---
@@ -49,6 +49,6 @@
 - Modify: `docs/teaching/session-summary-selection-sop.md`
 - Modify: `docs/teaching/session-summary-generation-sop.md`
 
-- [ ] 验证 trigger reason、非法统计、连续前缀、ID 空洞和 Tokenizer 路径。
-- [ ] 验证真实 Ollama 摘要调用返回非空结果。
-- [ ] Review、完整测试并提交。
+- [x] 验证 trigger reason、非法统计、连续前缀、ID 空洞和 Tokenizer 路径。
+- [x] 验证真实 Ollama 摘要调用返回非空结果。
+- [x] Review、完整测试并提交。

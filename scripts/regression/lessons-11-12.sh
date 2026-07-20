@@ -2,8 +2,8 @@
 
 set -eu
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
+script_dir=$(CDPATH= cd "$(dirname "$0")" && pwd)
+repo_root=$(CDPATH= cd "$script_dir/../.." && pwd)
 cd "$repo_root"
 
 live=false
@@ -28,7 +28,7 @@ command -v curl >/dev/null 2>&1 || fail "curl is not installed or not in PATH"
 
 tokenizer_path=${RECENT_CHAT_TOKENIZER_PATH:-assets/tokenizers/qwen2/tokenizer.json}
 [ -f "$tokenizer_path" ] || fail "missing tokenizer asset: $tokenizer_path; run scripts/bootstrap/tokenizer-asset.sh SOURCE first"
-tokenizer_path=$(CDPATH= cd -- "$(dirname -- "$tokenizer_path")" && pwd)/$(basename -- "$tokenizer_path")
+tokenizer_path=$(CDPATH= cd "$(dirname "$tokenizer_path")" && pwd)/$(basename "$tokenizer_path")
 QWEN_TOKENIZER_PATH=$tokenizer_path
 export QWEN_TOKENIZER_PATH
 
@@ -41,6 +41,10 @@ pass "lesson 11 Ollama model is available: $model"
 GOCACHE=${GOCACHE:-$repo_root/.cache/go-build}
 export GOCACHE
 mkdir -p "$GOCACHE"
+
+expected_tokenizer_sha=${RECENT_CHAT_TOKENIZER_SHA256:-b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8}
+go run ./cmd/tokenizer-inspect --tokenizer "$tokenizer_path" --expect-sha256 "$expected_tokenizer_sha" >/dev/null
+pass "tokenizer fingerprint matches $expected_tokenizer_sha"
 
 go test ./internal/promptbudget ./internal/recentchat -run 'Test(Automatic|HTTPOllamaClientContextLength|ServiceAutomatic)' -count=1
 pass "lesson 11-12 focused tests"
@@ -66,7 +70,7 @@ fi
 pass "lesson 11 automatic budget equation balances"
 
 overflow_file="$repo_root/.cache/lessons-11-12-overflow.txt"
-trap 'rm -f "$overflow_file" "$repo_root/.cache/lessons-11-12-live.txt" "$repo_root/.cache/lessons-11-12-conflict.txt"' EXIT HUP INT TERM
+trap 'rm -f "$overflow_file" "$repo_root/.cache/lessons-11-12-live.txt" "$repo_root/.cache/lessons-11-12-conflict.txt"' 0 HUP INT TERM
 if go run ./cmd/automatic-budget-demo --base-url "$ollama_url" --model "$model" --output-reserve "$context_limit" --tokenizer "$tokenizer_path" >"$overflow_file" 2>&1; then
 	fail "context overflow unexpectedly succeeded"
 fi
@@ -74,7 +78,7 @@ grep -F 'exceeds context limit' "$overflow_file" >/dev/null || fail "overflow fa
 pass "lesson 11 impossible fixed/output budget is rejected"
 
 if [ "$live" = false ]; then
-	printf '\nLessons 11-12 read-only regression passed.\n'
+	printf '\nLessons 11-12 no-business-write regression passed.\n'
 	printf 'Live lesson 12 skipped. Start recent-chat and rerun with --live.\n'
 	exit 0
 fi

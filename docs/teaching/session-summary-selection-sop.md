@@ -95,6 +95,15 @@ selector 遍历全部未摘要消息一次：
 
 ## 5. 实践 SOP
 
+### SOP 0：运行第 13-15 节跨环境回归
+
+```bash
+sh scripts/regression/lessons-13-15.sh
+```
+
+第 14 节部分使用 `RECENT_CHAT_TOKENIZER_PATH` 或默认资产，固定验证标准边界
+`129/86` tokens，以及存在 ID 空洞时 watermark 跟随真实最后驱逐消息。
+
 ### SOP 1：标准边界
 
 ```bash
