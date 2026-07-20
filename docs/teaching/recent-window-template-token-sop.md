@@ -121,6 +121,15 @@ for left, right := 0, len(selected)-1; left < right; left, right = left+1, right
 
 ## 4. 实践 SOP
 
+### SOP 0：运行第 9-10 节跨环境回归
+
+```bash
+sh scripts/regression/lessons-09-10.sh
+```
+
+除了第 9 节完整 conversation，它还会验证 formatted recent window 的角色/边界计数和
+“最新消息超过预算时返回空窗口”的严格行为。
+
 ### SOP 1：运行格式化窗口测试
 
 ```bash

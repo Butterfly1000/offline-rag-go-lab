@@ -109,8 +109,8 @@ go test ./internal/chatprompt
 - 并发检查：`go test -race ./internal/chatprompt` 通过
 - 静态检查：`go vet ./internal/chatprompt ./cmd/conversation-token-demo` 通过
 - 命令构建：`go build ./cmd/...` 通过
-- 完整实践：4 条消息的 rendered conversation 为 `122` tokens
-- 对照实践：去掉两条历史后，2 条消息为 `62` tokens
+- 初次实践曾记录 4 条消息 `122` tokens、去掉历史后 `62` tokens
+- 第 30 节修复 Tokenizer 中文/added-token 执行链后，回归值更新为 `100/56`，增量 `44`
 - Review：未发现 Critical 或 Important 问题
 
 ## 第 10 节：模板感知的 recent window

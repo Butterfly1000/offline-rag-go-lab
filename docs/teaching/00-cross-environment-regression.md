@@ -189,7 +189,29 @@ sh scripts/regression/lesson-08.sh
 - 中文测试失败：检查本地兼容代码，不要用英文测试代替。
 - 只有消息格式测试失败：再检查第 8 节 `internal/chatprompt` 实现。
 
-## 5. 后续章节如何记录类似问题
+## 5. 第 9-10 节：完整 Conversation 与严格窗口
+
+执行：
+
+```bash
+sh scripts/regression/lessons-09-10.sh
+```
+
+这一组只依赖 Go、本地 `third_party` 和 Tokenizer 资产，不需要 MySQL、Ollama 或
+Qdrant。当前资产的黄金结果是完整 conversation `100` tokens、去掉历史后 `56`，
+两条历史及其消息边界增量为 `44`。
+
+旧课程记录中的 `122/62` 来自 Tokenizer 中文执行链修复前。消息格式没有变化，变化的
+是 Tokenizer 不再丢失或错误处理中文/added token，因此不能为了匹配旧文档回退代码。
+
+如果脚本在另一台机器得到不同数字，先检查 `RECENT_CHAT_TOKENIZER_PATH` 和资产来源，
+不要直接修改预期数字。命令能够运行但黄金值不同，说明两台机器使用的 Tokenizer
+规则或文件 revision 不一致。
+
+严格窗口测试不依赖真实数据库。它用 fake counter 固定每条格式化消息的成本，证明
+最新消息超过预算时窗口为空，而不是为了“至少一条历史”突破容量。
+
+## 6. 后续章节如何记录类似问题
 
 每一节不必都创建新文档。出现跨环境问题时，按以下格式追加到本文：
 

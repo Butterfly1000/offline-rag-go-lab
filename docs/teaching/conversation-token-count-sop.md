@@ -79,6 +79,16 @@ count, tokens, ids, error
 
 ## 3. 实践 SOP
 
+### SOP 0：运行第 9-10 节跨环境回归
+
+```bash
+sh scripts/regression/lessons-09-10.sh
+```
+
+脚本会使用 `RECENT_CHAT_TOKENIZER_PATH` 或默认本地资产，验证当前黄金结果 `100`、
+去掉历史后的 `56` 以及历史增量 `44`。资产初始化和失败诊断见
+[跨环境回归与排坑](/offline-rag-go-lab/docs/teaching/00-cross-environment-regression.md:1)。
+
 ### SOP 1：确认 tokenizer 资产
 
 默认路径：
@@ -122,7 +132,7 @@ Total prompt tokens: ...
 
 ```text
 Messages: 4
-Total prompt tokens: 122
+Total prompt tokens: 100
 ```
 
 ### SOP 3：去掉历史做对照
@@ -139,10 +149,13 @@ go run ./cmd/conversation-token-demo \
 
 ```text
 Messages: 2
-Total prompt tokens: 62
+Total prompt tokens: 56
 ```
 
-`122 - 62 = 60` 是本次两条历史消息及其角色/边界带来的完整增量。这个数字用于复现实验，不是其他 tokenizer 的固定结论。
+`100 - 56 = 44` 是本次两条历史消息及其角色/边界带来的完整增量。这个数字用于复现实验，不是其他 tokenizer 的固定结论。
+
+早期文档曾记录 `122/62`。第 30 节修复中文、regexp2 offset 和 added-token 执行链后，
+相同资产的正确黄金值变为 `100/56`；旧值不能继续作为跨机器标准。
 
 ### SOP 4：运行测试
 
