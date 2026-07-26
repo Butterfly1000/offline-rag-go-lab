@@ -16,11 +16,11 @@
 | F08 | 前置：recent-chat | `recent-window-layer-02b-token-budget.md` | [F08](F08-content-token-window.md) | content token 窗口 |
 | F09 | 前置：summary | `recent-window-layer-02c-session-summary.md` | [F09](F09-why-session-summary.md) | 为什么需要摘要 |
 | L01 | Tokenizer | `tokenizer-load-once-sop.md` | [L01](L01-tokenizer-load-once.md) | 加载一次、多次计数 |
-| L02 | Tokenizer | `tokenizer-inspect-sop.md` | `L02-tokenizer-components.md` | JSON 组件 |
-| L03 | Tokenizer | `tokenizer-fingerprint-sop.md` | `L03-tokenizer-fingerprint.md` | 资产指纹 |
-| L04 | Tokenizer | `ollama-model-inspect-sop.md` | `L04-ollama-model-metadata.md` | 模型元数据 |
-| L05 | Tokenizer | `prompt-template-render-sop.md` | `L05-render-prompt-template.md` | 模板渲染 |
-| L06 | Tokenizer | `prompt-template-token-overhead-sop.md` | `L06-prompt-token-overhead.md` | 模板开销 |
+| L02 | Tokenizer | `tokenizer-inspect-sop.md` | [L02](L02-tokenizer-components.md) | JSON 组件 |
+| L03 | Tokenizer | `tokenizer-fingerprint-sop.md` | [L03](L03-tokenizer-fingerprint.md) | 资产指纹 |
+| L04 | Tokenizer | `ollama-model-inspect-sop.md` | [L04](L04-ollama-model-metadata.md) | 模型元数据 |
+| L05 | Tokenizer | `prompt-template-render-sop.md` | [L05](L05-render-prompt-template.md) | 模板渲染 |
+| L06 | Tokenizer | `prompt-template-token-overhead-sop.md` | [L06](L06-prompt-token-overhead.md) | 模板开销 |
 | L07 | Tokenizer | `context-budget-plan-sop.md` | `L07-context-budget.md` | 上下文预算 |
 | L08 | Tokenizer | `qwen-message-format-sop.md` | `L08-qwen-message-format.md` | Qwen 消息格式 |
 | L09 | Tokenizer | `conversation-token-count-sop.md` | `L09-conversation-token-count.md` | 完整对话计数 |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L06 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
