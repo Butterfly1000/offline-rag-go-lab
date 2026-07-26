@@ -36,11 +36,11 @@
 | L19 | Memory | `memory-item-validation-sop.md` | [L19](L19-memory-candidate-validation.md) | 记忆候选校验 |
 | L20 | Memory | `memory-item-extraction-sop.md` | [L20](L20-memory-extraction.md) | 候选提取 |
 | L21 | Memory | `memory-item-resolution-sop.md` | [L21](L21-memory-resolution.md) | 生命周期决策 |
-| L22 | Memory | `memory-item-store-sop.md` | `L22-memory-store.md` | MySQL 存储 |
-| L23 | Memory | `memory-item-qdrant-sop.md` | `L23-memory-qdrant.md` | 向量检索 |
-| L24 | Retrieval | `context-hit-boundary-sop.md` | `L24-context-hit-boundary.md` | Hit 与 ownership |
-| L25 | Retrieval | `document-qdrant-sop.md` | `L25-document-qdrant.md` | 文档 Qdrant |
-| L26 | Retrieval | `dual-retrieval-sop.md` | `L26-dual-retrieval.md` | 双路召回 |
+| L22 | Memory | `memory-item-store-sop.md` | [L22](L22-memory-store.md) | MySQL 存储 |
+| L23 | Memory | `memory-item-qdrant-sop.md` | [L23](L23-memory-qdrant.md) | 向量检索 |
+| L24 | Retrieval | `context-hit-boundary-sop.md` | [L24](L24-context-hit-boundary.md) | Hit 与 ownership |
+| L25 | Retrieval | `document-qdrant-sop.md` | [L25](L25-document-qdrant.md) | 文档 Qdrant |
+| L26 | Retrieval | `dual-retrieval-sop.md` | [L26](L26-dual-retrieval.md) | 双路召回 |
 | L27 | Retrieval | `context-merge-budget-sop.md` | `L27-context-merge-budget.md` | 合并与预算 |
 | L28 | Retrieval | `recent-chat-dual-retrieval-sop.md` | `L28-chat-dual-retrieval.md` | 接入 chat |
 | L29 | Ingestion | `document-identity-version-sop.md` | `L29-document-identity.md` | 身份与版本 |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L21 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L26 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
