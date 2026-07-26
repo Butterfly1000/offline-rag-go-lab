@@ -41,12 +41,12 @@
 | L24 | Retrieval | `context-hit-boundary-sop.md` | [L24](L24-context-hit-boundary.md) | Hit 与 ownership |
 | L25 | Retrieval | `document-qdrant-sop.md` | [L25](L25-document-qdrant.md) | 文档 Qdrant |
 | L26 | Retrieval | `dual-retrieval-sop.md` | [L26](L26-dual-retrieval.md) | 双路召回 |
-| L27 | Retrieval | `context-merge-budget-sop.md` | `L27-context-merge-budget.md` | 合并与预算 |
-| L28 | Retrieval | `recent-chat-dual-retrieval-sop.md` | `L28-chat-dual-retrieval.md` | 接入 chat |
-| L29 | Ingestion | `document-identity-version-sop.md` | `L29-document-identity.md` | 身份与版本 |
-| L30 | Ingestion | `structured-document-chunking-sop.md` | `L30-structured-chunking.md` | 结构化切块 |
-| L31 | Ingestion | `idempotent-document-ingestion-sop.md` | `L31-idempotent-ingestion.md` | 幂等入库 |
+| L27 | Retrieval | `context-merge-budget-sop.md` | [L27](L27-context-merge-budget.md) | 合并与预算 |
+| L28 | Retrieval | `recent-chat-dual-retrieval-sop.md` | [L28](L28-chat-dual-retrieval.md) | 接入 chat |
+| L29 | Ingestion | `document-identity-version-sop.md` | [L29](L29-document-identity.md) | 身份与版本 |
+| L30 | Ingestion | `structured-document-chunking-sop.md` | [L30](L30-structured-chunking.md) | 结构化切块 |
+| L31 | Ingestion | `idempotent-document-ingestion-sop.md` | [L31](L31-idempotent-ingestion.md) | 幂等入库 |
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L26 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L31 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
