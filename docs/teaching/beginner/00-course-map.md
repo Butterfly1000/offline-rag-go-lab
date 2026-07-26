@@ -46,7 +46,11 @@
 | L29 | Ingestion | `document-identity-version-sop.md` | [L29](L29-document-identity.md) | 身份与版本 |
 | L30 | Ingestion | `structured-document-chunking-sop.md` | [L30](L30-structured-chunking.md) | 结构化切块 |
 | L31 | Ingestion | `idempotent-document-ingestion-sop.md` | [L31](L31-idempotent-ingestion.md) | 幂等入库 |
-| L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
-| L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
+| L32 | Ingestion | `document-snapshot-alias-sop.md` | [L32](L32-snapshot-alias.md) | 快照与 alias |
+| L33 | Ingestion | `document-retrieval-evaluation-sop.md` | [L33](L33-retrieval-evaluation.md) | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L31 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F09、L01–L33 共 42 课均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；最终机械审查待 controller 完成。
+
+## 三分钟复述与建议阅读顺序
+
+按阶段顺读：F01–F09 先认识 gateway、窗口和 tokenizer；L01–L12 把 token 与预算算清；L13–L18 接上摘要；L19–L23 建立可检索记忆；L24–L28 把记忆和文档安全地接入 chat；L29–L33 完成文档身份、切块、幂等入库、alias 发布与评估。三分钟复述就是：**先计量上下文，再保存和检索可信资料，最后用可验证、可回退的文档发布闭环证明它真的可用。**
