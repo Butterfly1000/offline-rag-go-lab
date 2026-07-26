@@ -11,11 +11,11 @@
 | F03 | 前置：gateway | `03-chunking-behavior.md` | [F03](F03-legacy-chunking.md) | 启发式切块 |
 | F04 | 前置：recent-chat | `recent-window-layer-01.md` | [F04](F04-recent-window-basics.md) | 最近消息窗口 |
 | F05 | 前置：recent-chat | `recent-window-runtime-sop.md` | [F05](F05-recent-window-runtime.md) | recent-chat 运行验证 |
-| F06 | 前置：recent-chat | `recent-window-layer-02-count-distortion.md` | `F06-message-count-distortion.md` | 条数裁剪失真 |
-| F07 | 前置：tokenizer | `tokenizer-demo-sop-qwen2.md` | `F07-tokenizer-asset-setup.md` | tokenizer 资产准备 |
-| F08 | 前置：recent-chat | `recent-window-layer-02b-token-budget.md` | `F08-content-token-window.md` | content token 窗口 |
-| F09 | 前置：summary | `recent-window-layer-02c-session-summary.md` | `F09-why-session-summary.md` | 为什么需要摘要 |
-| L01 | Tokenizer | `tokenizer-load-once-sop.md` | `L01-tokenizer-load-once.md` | 加载一次、多次计数 |
+| F06 | 前置：recent-chat | `recent-window-layer-02-count-distortion.md` | [F06](F06-message-count-distortion.md) | 条数裁剪失真 |
+| F07 | 前置：tokenizer | `tokenizer-demo-sop-qwen2.md` | [F07](F07-tokenizer-asset-setup.md) | tokenizer 资产准备 |
+| F08 | 前置：recent-chat | `recent-window-layer-02b-token-budget.md` | [F08](F08-content-token-window.md) | content token 窗口 |
+| F09 | 前置：summary | `recent-window-layer-02c-session-summary.md` | [F09](F09-why-session-summary.md) | 为什么需要摘要 |
+| L01 | Tokenizer | `tokenizer-load-once-sop.md` | [L01](L01-tokenizer-load-once.md) | 加载一次、多次计数 |
 | L02 | Tokenizer | `tokenizer-inspect-sop.md` | `L02-tokenizer-components.md` | JSON 组件 |
 | L03 | Tokenizer | `tokenizer-fingerprint-sop.md` | `L03-tokenizer-fingerprint.md` | 资产指纹 |
 | L04 | Tokenizer | `ollama-model-inspect-sop.md` | `L04-ollama-model-metadata.md` | 模型元数据 |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：本批 F01–F05 为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
