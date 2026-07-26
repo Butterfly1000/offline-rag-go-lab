@@ -21,11 +21,11 @@
 | L04 | Tokenizer | `ollama-model-inspect-sop.md` | [L04](L04-ollama-model-metadata.md) | 模型元数据 |
 | L05 | Tokenizer | `prompt-template-render-sop.md` | [L05](L05-render-prompt-template.md) | 模板渲染 |
 | L06 | Tokenizer | `prompt-template-token-overhead-sop.md` | [L06](L06-prompt-token-overhead.md) | 模板开销 |
-| L07 | Tokenizer | `context-budget-plan-sop.md` | `L07-context-budget.md` | 上下文预算 |
-| L08 | Tokenizer | `qwen-message-format-sop.md` | `L08-qwen-message-format.md` | Qwen 消息格式 |
-| L09 | Tokenizer | `conversation-token-count-sop.md` | `L09-conversation-token-count.md` | 完整对话计数 |
-| L10 | Tokenizer | `recent-window-template-token-sop.md` | `L10-template-aware-recent-window.md` | 模板感知窗口 |
-| L11 | Tokenizer | `automatic-history-budget-sop.md` | `L11-automatic-history-budget.md` | 自动历史预算 |
+| L07 | Tokenizer | `context-budget-plan-sop.md` | [L07](L07-context-budget.md) | 上下文预算 |
+| L08 | Tokenizer | `qwen-message-format-sop.md` | [L08](L08-qwen-message-format.md) | Qwen 消息格式 |
+| L09 | Tokenizer | `conversation-token-count-sop.md` | [L09](L09-conversation-token-count.md) | 完整对话计数 |
+| L10 | Tokenizer | `recent-window-template-token-sop.md` | [L10](L10-template-aware-recent-window.md) | 模板感知窗口 |
+| L11 | Tokenizer | `automatic-history-budget-sop.md` | [L11](L11-automatic-history-budget.md) | 自动历史预算 |
 | L12 | Tokenizer | `recent-chat-automatic-token-budget-sop.md` | `L12-chat-automatic-budget.md` | `/chat` 自动预算 |
 | L13 | Summary | `session-summary-trigger-sop.md` | `L13-summary-trigger.md` | 触发策略 |
 | L14 | Summary | `session-summary-selection-sop.md` | `L14-summary-message-selection.md` | 驱逐消息选择 |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L06 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L11 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
