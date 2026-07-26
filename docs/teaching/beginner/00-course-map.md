@@ -26,11 +26,11 @@
 | L09 | Tokenizer | `conversation-token-count-sop.md` | [L09](L09-conversation-token-count.md) | 完整对话计数 |
 | L10 | Tokenizer | `recent-window-template-token-sop.md` | [L10](L10-template-aware-recent-window.md) | 模板感知窗口 |
 | L11 | Tokenizer | `automatic-history-budget-sop.md` | [L11](L11-automatic-history-budget.md) | 自动历史预算 |
-| L12 | Tokenizer | `recent-chat-automatic-token-budget-sop.md` | `L12-chat-automatic-budget.md` | `/chat` 自动预算 |
-| L13 | Summary | `session-summary-trigger-sop.md` | `L13-summary-trigger.md` | 触发策略 |
-| L14 | Summary | `session-summary-selection-sop.md` | `L14-summary-message-selection.md` | 驱逐消息选择 |
-| L15 | Summary | `session-summary-generation-sop.md` | `L15-summary-generation.md` | 滚动摘要生成 |
-| L16 | Summary | `session-summary-store-sop.md` | `L16-summary-store.md` | 摘要持久化 |
+| L12 | Tokenizer | `recent-chat-automatic-token-budget-sop.md` | [L12](L12-chat-automatic-budget.md) | `/chat` 自动预算 |
+| L13 | Summary | `session-summary-trigger-sop.md` | [L13](L13-summary-trigger.md) | 触发策略 |
+| L14 | Summary | `session-summary-selection-sop.md` | [L14](L14-summary-message-selection.md) | 驱逐消息选择 |
+| L15 | Summary | `session-summary-generation-sop.md` | [L15](L15-summary-generation.md) | 滚动摘要生成 |
+| L16 | Summary | `session-summary-store-sop.md` | [L16](L16-summary-store.md) | 摘要持久化 |
 | L17 | Summary | `session-summary-update-sop.md` | `L17-summary-update.md` | 摘要更新编排 |
 | L18 | Summary | `recent-chat-session-summary-sop.md` | `L18-chat-session-summary.md` | 摘要接入 chat |
 | L19 | Memory | `memory-item-validation-sop.md` | `L19-memory-candidate-validation.md` | 记忆候选校验 |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L11 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L16 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
