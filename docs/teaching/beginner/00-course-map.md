@@ -49,7 +49,7 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | [L32](L32-snapshot-alias.md) | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | [L33](L33-retrieval-evaluation.md) | 检索评估 |
 
-验收状态：F01–F09、L01–L33 共 42 课均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；最终机械审查待 controller 完成。
+验收状态：F01–F09、L01–L33 共 42 课均为“教师完成、学生 APPROVED、正确性审核 FINAL APPROVED”；最终机械审查已完成：42 源/42 目标/42 唯一，42 课 × 12 = 504 栏目，本地链接全部存在、无秘密，`git diff --check` 与最终 HEAD 上 `go test ./... -count=1` 均通过。
 
 ## 三分钟复述与建议阅读顺序
 
