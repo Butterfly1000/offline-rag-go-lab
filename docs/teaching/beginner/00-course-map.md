@@ -31,11 +31,11 @@
 | L14 | Summary | `session-summary-selection-sop.md` | [L14](L14-summary-message-selection.md) | 驱逐消息选择 |
 | L15 | Summary | `session-summary-generation-sop.md` | [L15](L15-summary-generation.md) | 滚动摘要生成 |
 | L16 | Summary | `session-summary-store-sop.md` | [L16](L16-summary-store.md) | 摘要持久化 |
-| L17 | Summary | `session-summary-update-sop.md` | `L17-summary-update.md` | 摘要更新编排 |
-| L18 | Summary | `recent-chat-session-summary-sop.md` | `L18-chat-session-summary.md` | 摘要接入 chat |
-| L19 | Memory | `memory-item-validation-sop.md` | `L19-memory-candidate-validation.md` | 记忆候选校验 |
-| L20 | Memory | `memory-item-extraction-sop.md` | `L20-memory-extraction.md` | 候选提取 |
-| L21 | Memory | `memory-item-resolution-sop.md` | `L21-memory-resolution.md` | 生命周期决策 |
+| L17 | Summary | `session-summary-update-sop.md` | [L17](L17-summary-update.md) | 摘要更新编排 |
+| L18 | Summary | `recent-chat-session-summary-sop.md` | [L18](L18-chat-session-summary.md) | 摘要接入 chat |
+| L19 | Memory | `memory-item-validation-sop.md` | [L19](L19-memory-candidate-validation.md) | 记忆候选校验 |
+| L20 | Memory | `memory-item-extraction-sop.md` | [L20](L20-memory-extraction.md) | 候选提取 |
+| L21 | Memory | `memory-item-resolution-sop.md` | [L21](L21-memory-resolution.md) | 生命周期决策 |
 | L22 | Memory | `memory-item-store-sop.md` | `L22-memory-store.md` | MySQL 存储 |
 | L23 | Memory | `memory-item-qdrant-sop.md` | `L23-memory-qdrant.md` | 向量检索 |
 | L24 | Retrieval | `context-hit-boundary-sop.md` | `L24-context-hit-boundary.md` | Hit 与 ownership |
@@ -49,4 +49,4 @@
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | `L32-snapshot-alias.md` | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | `L33-retrieval-evaluation.md` | 检索评估 |
 
-验收状态：F01–F05、F06–F09、L01–L16 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
+验收状态：F01–F05、F06–F09、L01–L21 均为“教师完成、学生 APPROVED、正确性审核 APPROVED”；其余课程尚未创建。
