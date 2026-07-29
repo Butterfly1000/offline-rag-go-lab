@@ -24,6 +24,55 @@
 3. 每项必须写明“为什么需要”和“何时再做”
 4. 不因为 backlog 很长而阻塞下一章
 
+课程顺序以 [Production Offline RAG Course Blueprint](00-course-blueprint.md) 为准。
+
+本文件使用三种映射状态：
+
+- `已纳入 Lxx`：已经成为正式课程的一部分，实施时以蓝图门禁为准。
+- `已由 Lxx 基线覆盖`：原始最低正确性问题已经解决，条目保留生产增强背景。
+- `保留候选`：尚无足够证据成为独立课程；达到触发条件后重新评估蓝图。
+
+### 蓝图映射总表
+
+| 分类 | 项目 | 当前映射 |
+|---|---|---|
+| Tokenizer | 1. 官方来源与版本绑定 | `已纳入 L54` |
+| Tokenizer | 2. token IDs 黄金样例对照 | `已纳入 L57` |
+| Tokenizer | 3. 完整 chat template 计数 | `已由 L09-L12 基线覆盖`；生产跨 runtime 对照纳入 L57 |
+| Tokenizer | 4. 多模型 tokenizer 注册表 | `已纳入 L55` |
+| Tokenizer | 5. 性能与内存优化 | `已纳入 L62-L63`，但必须先有 benchmark |
+| Tokenizer | 6. SHA256 参数格式校验 | `已纳入 L54` |
+| Tokenizer | 7. 模型上限与运行时 context size 对照 | `已纳入 L55` |
+| Tokenizer | 8. `/api/chat` 多轮消息精确模板对照 | `已纳入 L57` |
+| Tokenizer | 9. 复杂 Ollama template 函数兼容 | `已纳入 L55-L57` |
+| Tokenizer | 10. Model metadata 缓存 | `已纳入 L62`，以性能证据决定实现 |
+| Tokenizer | 11. 历史消息成对裁剪 | `已纳入 L40` |
+| Tokenizer | 12. 预算与 Ollama usage 对照监控 | `已纳入 L70` |
+| Tokenizer | 13. 本地 tokenizer fork 与官方 runtime 持续对照 | `已纳入 L57` |
+| Document | 0. 扩充生产 Golden Dataset | `已纳入 L34` |
+| Document | 1. Oversized text 精确切分性能 | `已纳入 L63`，以 benchmark 决定是否优化 |
+| Document | 2. 更多结构解析器 | `已纳入 L50-L51` |
+| Summary | 1. 触发阈值的运行数据校准 | `已纳入 L43、L63` |
+| Summary | 2. 并发触发去重与冷却 | `已纳入 L60` |
+| Summary | 3. 消息删除后的水位语义 | `已由 L14-L18 基线覆盖`；生产并发与删除回归纳入 L60、L68 |
+| Summary | 4. 摘要结构化输出与质量评估 | `已纳入 L43` |
+| Summary | 5. 未摘要消息查询索引 | `已纳入 L63、L74`，先以 `EXPLAIN` 证明需要 |
+| Summary | 6. 摘要同步延迟与失败隔离 | `已纳入 L60-L63` |
+| Memory | 1. 升级 Ollama 后恢复完整 JSON schema 对照 | `已纳入 L57` |
+| Memory | 2. Memory key ontology 与提取召回率评估 | `已纳入 L44-L45` |
+| Memory | 3. Confidence 的来源和校准 | `已纳入 L45` |
+| Memory | 4. MySQL memory conflict 重试与真实并发压测 | `已纳入 L46、L60` |
+| Memory | 5. Evidence user 复合外键 migration | `已纳入 L74` |
+| Memory | 6. MySQL outbox 与 Qdrant rebuild worker | `已纳入 L47` |
+| Memory | 7. 跨 key 语义去重 | `已纳入 L44` |
+| Memory | 8. Qdrant 索引漂移扫描与检索评估 | `已纳入 L47-L48` |
+| Dual Retrieval | 1. 跨来源 Reranker | `已纳入 L37` |
+| Dual Retrieval | 2. Score Calibration | `已纳入 L38` |
+| Dual Retrieval | 3. 动态 Quota | `已纳入 L38` |
+
+映射不代表这些优化已经实现。只有原始最低正确性已在现有课程验证的项目才标记
+`已由 ... 基线覆盖`；其余项目仍是 L34-L78 的规划内容。
+
 ---
 
 ## Tokenizer 优化项
@@ -50,7 +99,7 @@
 
 为什么仍需要：尚未用 Ollama 实际 `prompt_eval_count` 对多轮黄金样例做严格误差对照。
 
-何时再做：开始统一分配 system、history、retrieval、user input 和 output reserve 预算时。
+何时再做：L09-L12 已完成本地完整计数与预算基线；L57 再做官方/参考 runtime 的严格对照。
 
 目标结果：请求前计算结果与 Ollama 返回的实际 prompt token 数在黄金样例中一致。
 
@@ -114,7 +163,7 @@
 
 为什么需要：当前严格窗口按单条 message 选择，极端预算下可能只保留 assistant 而丢掉对应 user 问题。
 
-何时再做：session summary 和上下文质量课程开始时。
+何时再做：在 L40 Context Packing 中用回答质量和完整 turn 样例共同验证。
 
 目标结果：定义 turn 边界，在容量允许时优先保留完整 user/assistant turn，并明确 tool message 的归属。
 
@@ -177,7 +226,7 @@ Office、HTML 或其他编程语言。
 
 为什么需要：同一 session 的并发请求可能同时观察到相同水位并重复生成摘要。
 
-何时再做：实现 summary MySQL upsert 和接入 `/chat` 时。
+何时再做：MySQL upsert 和 `/chat` 已完成；在 L60 用真实并发和任务幂等实现生产门禁。
 
 目标结果：使用 version 乐观锁、session 级锁或任务幂等键，确保同一消息区间只被成功提交一次。
 
@@ -185,7 +234,7 @@ Office、HTML 或其他编程语言。
 
 为什么需要：`last_message_id` 只表示已覆盖的最大 ID，不能通过 `latest_id - last_message_id` 直接推导真实消息数量。
 
-何时再做：实现 MySQL 未摘要消息查询时。
+何时再做：L14-L18 已按实际消息集合和 ID 空洞建立基线；L60/L68 增加并发删除和保留策略回归。
 
 目标结果：始终查询实际消息集合和计数，明确清理、归档和数据迁移对 summary watermark 的影响。
 
@@ -259,7 +308,7 @@ Office、HTML 或其他编程语言。
 
 为什么需要：当前显式命令能同步 active/forgotten item，但进程在 MySQL commit 后、Qdrant upsert 前失败时，需要人工重跑；线上不能依赖双写同时成功。
 
-何时再做：memory retrieval 接入 `/chat`，或 memory 写入开始持续发生时。
+何时再做：memory retrieval 已接入 `/chat`；该项正式进入 L47。
 
 目标结果：MySQL 事务同时写 outbox，worker 按 item ID/version 幂等 upsert/delete；提供从 MySQL 全量重建新 collection 的命令，Qdrant 失败不回滚或覆盖 MySQL。
 
@@ -275,7 +324,7 @@ Office、HTML 或其他编程语言。
 
 为什么需要：payload version 允许识别单条旧索引，但当前没有定时扫描缺失、多余或落后 point，也没有 Recall@K/阈值黄金样例。
 
-何时再做：memory retrieval 准备进入真实对话链路时。
+何时再做：memory retrieval 已进入真实对话链路；漂移扫描进入 L47，行为评估进入 L48。
 
 目标结果：按 user/item/version 对照 MySQL 与 Qdrant，输出可修复差异；建立正负查询集评估 Recall@K、跨用户隔离和 score 分布后再决定阈值。
 
@@ -318,3 +367,12 @@ Office、HTML 或其他编程语言。
 -> 何时再做
 -> 目标结果
 ```
+
+新增条目还必须写明：
+
+```text
+蓝图映射
+-> 已纳入 Lxx / 已由 Lxx 基线覆盖 / 保留候选
+```
+
+`保留候选` 达到证据条件后，先更新权威蓝图，再开始设计和实现。
