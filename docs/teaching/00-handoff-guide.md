@@ -1,198 +1,145 @@
 # Handoff Guide
 
-主题：如何在新模型里继续当前教学与实现工作
+主题：换模型、设备或任务后，如何继续当前教学与实践
 
-这份文档是给用户自己看的操作说明。目标是：换一个新模型或换一个环境后，仍然能让它按照当前这套方式继续，而不是从头开始乱讲。
+## 1. 最小读取顺序
 
----
+新模型开始前依次读取：
 
-## 1. 什么时候需要用这份文档
+1. [AI Initialization](../../AI_INITIALIZATION.md)
+2. [Game World Map](../../world/game-world-map.md)
+3. [Production Offline RAG Course Blueprint](00-course-blueprint.md)
+4. [Learning Status](00-learning-status.md)
+5. [Teaching Protocol](00-teaching-protocol.md)
 
-下面这些场景都应该用它：
+读完先复述：
 
-- 公司里用一个模型，回家换另一个模型
-- 当前上下文太长，需要新开一个会话
-- 想让新模型直接接手，不想重复解释背景
+- 当前教学从 L24 开始。
+- 当前实现边界是 L33。
+- 新实践实现从 L34 开始。
+- 当前终点是 L78。
+- `已实现待学习` 不能自动当成 `已学习`。
 
----
+如果复述不一致，先以蓝图和学习状态校正，不要立即改代码或开讲。
 
-## 2. 新模型开始前，让它先看什么
+## 2. 当前接手事实
 
-开新模型后，不要先直接问技术问题。
+| 工作类型 | 起点 | 说明 |
+|---|---|---|
+| 继续教学 | L24 | L24-L33 已实现和机器验证，待用户逐节确认 |
+| 继续新实践实现 | L34 | 先建立生产 Golden Dataset 和固定检索基线 |
+| 更新课程方向 | 权威蓝图 | 需要真实数据、故障、安全或部署证据 |
 
-先让它读取这些文档：
+## 3. 继续 L24-L28 教学
 
-1. [AI_INITIALIZATION.md](/offline-rag-go-lab/AI_INITIALIZATION.md:1)
-2. [00-teaching-protocol.md](/offline-rag-go-lab/docs/teaching/00-teaching-protocol.md:1)
-3. [00-learning-status.md](/offline-rag-go-lab/docs/teaching/00-learning-status.md:1)
-4. [recent-window-layer-01.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-01.md:1)
-5. [recent-window-runtime-sop.md](/offline-rag-go-lab/docs/teaching/recent-window-runtime-sop.md:1)
-6. [recent-window-layer-02-count-distortion.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02-count-distortion.md:1)
-7. [recent-window-layer-02b-token-budget.md](/offline-rag-go-lab/docs/teaching/recent-window-layer-02b-token-budget.md:1)
+额外读取：
 
-如果新模型要继续 recent-chat 的代码实现，也要让它读：
+1. [Context Hit Boundary](context-hit-boundary-sop.md)
+2. [Document Qdrant](document-qdrant-sop.md)
+3. [Dual Retrieval](dual-retrieval-sop.md)
+4. [Context Merge Budget](context-merge-budget-sop.md)
+5. [Recent Chat Dual Retrieval](recent-chat-dual-retrieval-sop.md)
+6. [Dual Retrieval Batch Log](00-dual-retrieval-batch-operation-log.md)
 
-7. [2026-06-29-recent-window-real-implementation-plan.md](/offline-rag-go-lab/docs/2026-06-29-recent-window-real-implementation-plan.md:1)
-
----
-
-## 3. 给新模型的推荐开场提示词
-
-可以直接复制下面这段给新模型：
-
-```text
-请先阅读这些文档，再继续当前教学和实现工作：
-
-1. docs/teaching/00-teaching-protocol.md
-2. docs/teaching/00-learning-status.md
-3. docs/teaching/recent-window-layer-01.md
-4. docs/teaching/recent-window-runtime-sop.md
-5. docs/teaching/recent-window-layer-02-count-distortion.md
-6. docs/teaching/recent-window-layer-02b-token-budget.md
-7. docs/2026-06-29-recent-window-real-implementation-plan.md
-
-要求：
-- 按 teaching-protocol 里的方式继续教学
-- 每次只讲一个小段，讲完停下来确认我是否理解
-- 我说“懂了”之后，再把这一段视为已学会并归档
-- 先从当前 learning-status 记录的下一章开始，不要重新从项目总览讲起
-- 如果继续做实现或验证，也要把运行结果和结论同步沉淀到 docs/teaching
-```
-
-### Dual Retrieval 第 24-28 节接手补充
-
-如果要继续当前最新教学或实现，最少再读：
-
-1. [context-hit-boundary-sop.md](/offline-rag-go-lab/docs/teaching/context-hit-boundary-sop.md:1)
-2. [document-qdrant-sop.md](/offline-rag-go-lab/docs/teaching/document-qdrant-sop.md:1)
-3. [dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/dual-retrieval-sop.md:1)
-4. [context-merge-budget-sop.md](/offline-rag-go-lab/docs/teaching/context-merge-budget-sop.md:1)
-5. [recent-chat-dual-retrieval-sop.md](/offline-rag-go-lab/docs/teaching/recent-chat-dual-retrieval-sop.md:1)
-6. [00-dual-retrieval-batch-operation-log.md](/offline-rag-go-lab/docs/teaching/00-dual-retrieval-batch-operation-log.md:1)
-
-接手模型必须区分：第 24-28 节已经实现和机器验证，但用户尚未逐节确认学会。继续教学
-应按“先实践效果，再沿代码解释”的方式从第 24 节开始；继续实现则进入生产级 document
-ingestion/chunking 与 retrieval evaluation，不重复实现 dual retrieval。
-
----
-
-## 4. 如果新模型是继续教学，不是继续改代码
-
-那你可以用更短的版本：
+教学从真实效果开始，再沿代码解释：
 
 ```text
-先阅读 docs/teaching/00-teaching-protocol.md 和 docs/teaching/00-learning-status.md，然后按里面记录的方式继续教学。从当前下一章开始，不要重讲已经学会的内容。每讲一小段就停下来等我确认。
+Hit 与 ownership
+  -> scope/user 隔离
+  -> 一次 embedding 与并行检索
+  -> 合并、去重和 token 预算
+  -> 真实 /chat
 ```
 
----
+不要重复实现 Dual Retrieval，也不要因为 batch log 已通过就代替用户确认。
 
-## 5. 如果新模型是继续实现 recent-chat / memory system
+## 4. 继续 L29-L33 教学
 
-那你可以用这版：
+额外读取：
+
+1. [Document Identity](document-identity-version-sop.md)
+2. [Structured Chunking](structured-document-chunking-sop.md)
+3. [Idempotent Ingestion](idempotent-document-ingestion-sop.md)
+4. [Snapshot Alias](document-snapshot-alias-sop.md)
+5. [Retrieval Evaluation](document-retrieval-evaluation-sop.md)
+6. [Document Ingestion Batch Log](00-document-ingestion-batch-operation-log.md)
+
+必须讲清：
+
+- 逻辑文档、版本、chunk、point 和 alias 是不同身份。
+- 幂等重试与全量 snapshot 发布解决的是不同问题。
+- 教学 fixture 的 1.0 分数不代表生产泛化。
+
+## 5. 继续 L34 新实践
+
+先读取：
+
+1. [课程蓝图阶段六](00-course-blueprint.md)
+2. [L33 Retrieval Evaluation](document-retrieval-evaluation-sop.md)
+3. [优化 Backlog](00-optimization-backlog.md)
+4. 现有 Golden Cases、评估实现和 batch log
+
+第一批新实践固定为 L34-L38：
 
 ```text
-先阅读：
-- docs/teaching/00-teaching-protocol.md
-- docs/teaching/00-learning-status.md
-- docs/2026-06-29-recent-window-real-implementation-plan.md
-- docs/teaching/recent-window-layer-01.md
-- docs/teaching/recent-window-runtime-sop.md
-- docs/teaching/recent-window-layer-02-count-distortion.md
-- docs/teaching/recent-window-layer-02b-token-budget.md
-
-然后先告诉我：
-1. 当前已经完成了什么
-2. 下一步应该做什么
-3. 如果继续实现，哪些文件要动
-
-要求你保持和文档里一致的教学方式与记录方式。
+生产 Golden Dataset
+  -> Sparse Retrieval
+  -> Hybrid Fusion
+  -> Reranker 与 Diversity
+  -> Calibration、动态 Quota 与回归门禁
 ```
 
----
+必须先完成 L34 的数据集和基线，再决定后四节的具体技术选择。不能先选 Reranker，再
+修改数据集为它证明效果。
 
-## 6. 新模型继续后，要记录什么
+## 6. 推荐提示词
 
-后续无论是教学还是实现，都应该继续记录：
-
-1. 新学会的章节或层
-2. 新跑通的真实验证步骤
-3. 新的运行 SOP
-4. 当前学习位置有没有变化
-5. 下一章变成了什么
-
-优先记录到：
-
-- `docs/teaching/`
-
-不要只留在聊天上下文里。
-
----
-
-## 7. 你实际怎么告诉 AI
-
-你可以把和 AI 的协作拆成两个动作：
-
-1. 开始前先让它“读”
-2. 结束前再让它“写”
-
-这样切模型、切设备、切会话时最稳。
-
-### 开始前：让 AI 先读
-
-新开一个模型时，直接发这段：
+### 继续教学
 
 ```text
-先阅读 docs/teaching/00-teaching-protocol.md 和 docs/teaching/00-learning-status.md。
+请先读取：
+1. world/game-world-map.md
+2. docs/teaching/00-course-blueprint.md
+3. docs/teaching/00-learning-status.md
+4. docs/teaching/00-teaching-protocol.md
 
-如果这次要继续 recent-window / memory 相关内容，再继续读：
-- docs/teaching/recent-window-layer-01.md
-- docs/teaching/recent-window-runtime-sop.md
-- docs/2026-06-29-recent-window-real-implementation-plan.md
-
-读取后先告诉我三件事：
-1. 我们现在学到哪了
-2. 下一小段应该讲什么
-3. 你这次会把哪些新结论写回 docs/teaching
+先复述当前教学、实现和终点坐标，再从 L24 开始。每次只讲一个小段，结合真实运行和
+代码边界；我确认“懂了”后，才更新对应一节的学习状态。
 ```
 
-这一步的目的不是让它立刻开讲，而是先确认它真的接上了上下文。
-
-### 结束前：让 AI 回写
-
-一轮教学快结束，或者你准备睡觉、切设备、切模型时，发这段：
+### 继续新实践
 
 ```text
-现在请收口并回写文档：
+请先读取：
+1. world/game-world-map.md
+2. docs/teaching/00-course-blueprint.md
+3. docs/teaching/00-learning-status.md
+4. docs/teaching/document-retrieval-evaluation-sop.md
+5. docs/teaching/00-optimization-backlog.md
 
-1. 把这次我已经听懂的内容归档到 docs/teaching
-2. 更新 docs/teaching/00-learning-status.md，写明现在学到哪、下一章是什么
-3. 如果这次有新的运行步骤或验证结果，也补到 docs/teaching
-4. 最后告诉我：下一个模型接手前，最少必须先读哪几份文档
+当前实现到 L33。请从 L34 开始，先建立版本化生产 Golden Dataset、失败分类和固定
+基线；按设计 -> 计划 -> 实现 -> 真实验证 -> SOP -> 审核推进，不能跳到 L35。
 ```
 
-这一步的目标就是把“聊天上下文”变成“项目内文档”。
+## 7. 一轮工作结束前
 
-### 如果 AI 教了一整晚
+无论教学还是实现，都要检查：
 
-第二天切到新模型前，再补一句：
+1. 哪些课程状态实际发生了变化。
+2. 新的运行证据是否进入对应 SOP 或 operation log。
+3. [Learning Status](00-learning-status.md) 是否仍与蓝图一致。
+4. [Game World Map](../../world/game-world-map.md) 的当前坐标是否需要更新。
+5. 新发现是当前正确性问题、正式课程内容，还是 Backlog 候选。
 
-```text
-请先不要继续新内容，先检查昨晚是否已经把教学结果完整写回 docs/teaching；如果没有，先补齐再继续。
-```
+不要把只存在于聊天上下文中的结论当成已经交接。
 
-这样可以防止夜里讲了很多，但没有沉淀。
+## 8. 如何判断接手正确
 
----
+正确接手的模型会：
 
-## 8. 如何判断新模型有没有接对
-
-如果新模型符合下面这些，就说明接得对：
-
-- 它先读文档再继续
-- 它知道第 1 层已经学会
-- 它知道下一章是“从 recent 到重要”
-- 它不会重讲项目概览
-- 它会在你说“懂了”后再归档
-- 它会继续维护 `docs/teaching/`
-
-如果它没有做到这些，就让它重新按第 3 节的提示词执行。
+- 先读蓝图与状态，再决定动作。
+- 知道教学 L24、实现 L33、新实践 L34、终点 L78。
+- 区分机器验证和用户学习确认。
+- 不重复实现已完成课程。
+- 不绕过 Golden Dataset 直接做主观优化。
+- 在结束前把事实写回唯一正确的文档。
