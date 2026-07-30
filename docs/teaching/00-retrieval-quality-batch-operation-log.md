@@ -186,3 +186,75 @@ scope_isolation=1 forbidden_hits=0
 ```
 
 Sparse 的精确能力和语义缺口都由固定 L34 数据集暴露，没有为结果修改 case。
+
+## 第 36 节：Explainable Hybrid RRF
+
+### 影响分析
+
+本节只读取已建好的 retrieval-quality alias，并调用本地 `bge-m3`；没有 Qdrant 写入、
+collection/alias 变更、MySQL 连接或远端操作。
+
+### RED 证据
+
+领域层：
+
+```bash
+go test ./internal/retrievalquality -run 'TestFuseRRF|TestHybrid'
+```
+
+初始结果：FAIL，`FuseRRF`、`FusionWeights`、`NewHybridStrategy` 等不存在。
+
+命令层：
+
+```bash
+go test ./cmd/retrieval-quality-demo -run TestBuildHybridReport
+```
+
+结果：FAIL，`buildHybridReport` 不存在。
+
+### GREEN 过程中的真实缺陷
+
+第一次实现后的测试不是立即通过，而是发现融合候选复制了 Dense 原始 `Score`：
+
+```text
+got=1.022522...
+want=0.032522...
+```
+
+另一个测试把原始 score 改成百万和负数后，融合顺序也错误改变。修复为新融合候选的
+score 从 0 开始，只累计两路 contribution。
+
+Review 又新增“一条 leg 混合多个 scopes”测试，确认先 FAIL，再在 leg validation 中
+锁定单一 scope。最终 package/command 全部 GREEN。
+
+### 真实运行
+
+命令连续执行两次，固定参数：
+
+```text
+dense_weight=1
+sparse_weight=1
+rank_constant=60
+```
+
+第二次精简结果：
+
+```text
+Dense validation  Recall@10=1 NDCG@10=1 p95=115.459ms
+Sparse validation Recall@10=0.666667 NDCG@10=0.666667 p95=14.605ms
+Hybrid validation Recall@10=1 NDCG@10=1 p95=148.116ms
+
+Dense train  NDCG@10=0.981546
+Hybrid train NDCG@10=0.979338
+
+scope_isolation=1 forbidden_hits=0 passed=true
+```
+
+两次运行的 trace top 5 顺序和 contribution 相同。真实 `rq-pava` 同时为
+dense_rank=1、sparse_rank=1，两个 contribution 均为 0.01639344，最终
+RRF=0.03278689。
+
+### 当前边界
+
+等权 Hybrid 在 validation 与 Dense 持平，在 train 略低，当前证据不足以声称默认
+优于 Dense。L37 只实现可插拔 Reranker；是否默认启用仍由 validation 结果决定。

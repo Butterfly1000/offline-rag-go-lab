@@ -22,6 +22,8 @@ func main() {
 		err = runIndex(ctx, os.Args[2:], os.Stdout)
 	case "sparse":
 		err = runSparse(ctx, os.Args[2:], os.Stdout)
+	case "hybrid":
+		err = runHybrid(ctx, os.Args[2:], os.Stdout)
 	default:
 		err = fmt.Errorf("unknown subcommand %q", os.Args[1])
 	}
