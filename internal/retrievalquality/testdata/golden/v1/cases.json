@@ -1,0 +1,368 @@
+[
+  {
+    "case_id": "rq-train-exact-01",
+    "query": "assets/tokenizers/qwen2/tokenizer.json",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-tokenizer-json", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-max-retries"]
+  },
+  {
+    "case_id": "rq-train-exact-02",
+    "query": "RAG-2048",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-error-rag-2048", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-error-503"]
+  },
+  {
+    "case_id": "rq-train-exact-03",
+    "query": "bge-m3 1024 Cosine",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-dense-bge", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-capacity-headroom"]
+  },
+  {
+    "case_id": "rq-train-code-01",
+    "query": "FuseRRF",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [
+      {"chunk_id": "rq-fuse-function", "relevance": 3},
+      {"chunk_id": "rq-rrf-formula", "relevance": 2}
+    ],
+    "forbidden_chunk_ids": ["ops-promote-function"]
+  },
+  {
+    "case_id": "rq-train-code-02",
+    "query": "FusionWeights rankConstant Candidate",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [
+      {"chunk_id": "rq-fuse-function", "relevance": 3},
+      {"chunk_id": "rq-rrf-formula", "relevance": 2}
+    ],
+    "forbidden_chunk_ids": ["ops-promote-function"]
+  },
+  {
+    "case_id": "rq-train-code-03",
+    "query": "PAVA Brier ECE",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-pava", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-slo-budget"]
+  },
+  {
+    "case_id": "rq-train-semantic-01",
+    "query": "怎样保证一个租户不会看到另一个知识空间的文档？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "semantic",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-scope-filter", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-secret-rotation"]
+  },
+  {
+    "case_id": "rq-train-semantic-02",
+    "query": "如何在不清理旧索引的情况下快速切回上一版检索数据？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "semantic",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-snapshot-alias", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-rollback"]
+  },
+  {
+    "case_id": "rq-train-mixed-01",
+    "query": "Sparse 字段权重 title=3.0 时 BM25 的 k1 和 b 是多少？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "mixed",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-bm25-fields", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-max-retries"]
+  },
+  {
+    "case_id": "rq-train-mixed-02",
+    "query": "Golden Dataset v1 的 train/validation 数量和 SHA256 约束",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "mixed",
+    "split": "train",
+    "judgments": [{"chunk_id": "rq-golden-version", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-backup-restore"]
+  },
+  {
+    "case_id": "rq-train-negative-01",
+    "query": "员工工资单审批流程是什么？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "negative",
+    "split": "train",
+    "judgments": [],
+    "forbidden_chunk_ids": ["ops-backup-restore"]
+  },
+  {
+    "case_id": "rq-train-negative-02",
+    "query": "iOS 首页按钮应该使用什么颜色？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "negative",
+    "split": "train",
+    "judgments": [],
+    "forbidden_chunk_ids": ["ops-liveness-readiness"]
+  },
+  {
+    "case_id": "rq-validation-exact-01",
+    "query": "k1=1.2 b=0.75",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "exact",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-bm25-fields", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-max-retries"]
+  },
+  {
+    "case_id": "rq-validation-code-01",
+    "query": "Reranker candidate_id relevance finite",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "code",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-reranker-contract", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-promote-function"]
+  },
+  {
+    "case_id": "rq-validation-semantic-01",
+    "query": "为什么不能直接把关键词分数和向量相似度相加？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "semantic",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-rrf-formula", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-slo-budget"]
+  },
+  {
+    "case_id": "rq-validation-semantic-02",
+    "query": "怎样避免搜索结果全部挤在同一个章节？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "semantic",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-diversity-caps", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-capacity-headroom"]
+  },
+  {
+    "case_id": "rq-validation-mixed-01",
+    "query": "PAVA 为什么只能 fit train，Brier score 在哪里报告？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "mixed",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-pava", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-slo-budget"]
+  },
+  {
+    "case_id": "rq-validation-mixed-02",
+    "query": "Qdrant snapshot 验证后如何 activate stable alias 并 rollback？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "mixed",
+    "split": "validation",
+    "judgments": [{"chunk_id": "rq-snapshot-alias", "relevance": 3}],
+    "forbidden_chunk_ids": ["ops-rollback"]
+  },
+  {
+    "case_id": "rq-validation-negative-01",
+    "query": "报销单需要哪些财务签字？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "negative",
+    "split": "validation",
+    "judgments": [],
+    "forbidden_chunk_ids": ["ops-secret-rotation"]
+  },
+  {
+    "case_id": "rq-validation-negative-02",
+    "query": "前端登录页的像素间距是多少？",
+    "knowledge_scope": "retrieval-quality-course",
+    "kind": "negative",
+    "split": "validation",
+    "judgments": [],
+    "forbidden_chunk_ids": ["ops-error-503"]
+  },
+  {
+    "case_id": "ops-train-exact-01",
+    "query": "OPS-503",
+    "knowledge_scope": "operations-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-error-503", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-error-rag-2048"]
+  },
+  {
+    "case_id": "ops-train-exact-02",
+    "query": "MAX_RETRIES defaults to 3",
+    "knowledge_scope": "operations-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-max-retries", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-bm25-fields"]
+  },
+  {
+    "case_id": "ops-train-exact-03",
+    "query": "SEV-1 SEV-2",
+    "knowledge_scope": "operations-course",
+    "kind": "exact",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-severity", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-golden-version"]
+  },
+  {
+    "case_id": "ops-train-code-01",
+    "query": "PromoteRelease",
+    "knowledge_scope": "operations-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-promote-function", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-fuse-function"]
+  },
+  {
+    "case_id": "ops-train-code-02",
+    "query": "expectedVersion releaseID context.Context",
+    "knowledge_scope": "operations-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-promote-function", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-fuse-function"]
+  },
+  {
+    "case_id": "ops-train-code-03",
+    "query": "MAX_RETRIES jittered exponential backoff",
+    "knowledge_scope": "operations-course",
+    "kind": "code",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-max-retries", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-tokenizer-json"]
+  },
+  {
+    "case_id": "ops-train-semantic-01",
+    "query": "服务进程还活着但暂时不能接流量时应该看哪个健康信号？",
+    "knowledge_scope": "operations-course",
+    "kind": "semantic",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-liveness-readiness", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-scope-filter"]
+  },
+  {
+    "case_id": "ops-train-semantic-02",
+    "query": "为什么应用回退不能修复破坏性的数据库变更？",
+    "knowledge_scope": "operations-course",
+    "kind": "semantic",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-rollback", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-snapshot-alias"]
+  },
+  {
+    "case_id": "ops-train-mixed-01",
+    "query": "SLO error budget 快速 burn 时是否应该暂停 release？",
+    "knowledge_scope": "operations-course",
+    "kind": "mixed",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-slo-budget", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-pava"]
+  },
+  {
+    "case_id": "ops-train-mixed-02",
+    "query": "Circuit breaker 从 open 到 half-open 的 probe 行为",
+    "knowledge_scope": "operations-course",
+    "kind": "mixed",
+    "split": "train",
+    "judgments": [{"chunk_id": "ops-circuit-breaker", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-reranker-contract"]
+  },
+  {
+    "case_id": "ops-train-negative-01",
+    "query": "RAG 的 Sparse tokenizer 权重是多少？",
+    "knowledge_scope": "operations-course",
+    "kind": "negative",
+    "split": "train",
+    "judgments": [],
+    "forbidden_chunk_ids": ["rq-bm25-fields"]
+  },
+  {
+    "case_id": "ops-train-negative-02",
+    "query": "用户画像向量应该存在哪个 collection？",
+    "knowledge_scope": "operations-course",
+    "kind": "negative",
+    "split": "train",
+    "judgments": [],
+    "forbidden_chunk_ids": ["rq-dense-bge"]
+  },
+  {
+    "case_id": "ops-validation-exact-01",
+    "query": "quarterly restoration drill",
+    "knowledge_scope": "operations-course",
+    "kind": "exact",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-backup-restore", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-golden-version"]
+  },
+  {
+    "case_id": "ops-validation-code-01",
+    "query": "PromoteRelease(ctx, releaseID, expectedVersion)",
+    "knowledge_scope": "operations-course",
+    "kind": "code",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-promote-function", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-fuse-function"]
+  },
+  {
+    "case_id": "ops-validation-semantic-01",
+    "query": "如何轮换密码而不让新旧客户端在切换期间中断？",
+    "knowledge_scope": "operations-course",
+    "kind": "semantic",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-secret-rotation", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-tokenizer-json"]
+  },
+  {
+    "case_id": "ops-validation-semantic-02",
+    "query": "停机前怎样让负载均衡不再发送请求并等待正在处理的请求结束？",
+    "knowledge_scope": "operations-course",
+    "kind": "semantic",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-drain", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-diversity-caps"]
+  },
+  {
+    "case_id": "ops-validation-mixed-01",
+    "query": "Capacity planning 为什么不能只看 average CPU，还要看 queue depth？",
+    "knowledge_scope": "operations-course",
+    "kind": "mixed",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-capacity-headroom", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-dense-bge"]
+  },
+  {
+    "case_id": "ops-validation-mixed-02",
+    "query": "OPS-503 promotion lock 的 owner healthy 时如何处理？",
+    "knowledge_scope": "operations-course",
+    "kind": "mixed",
+    "split": "validation",
+    "judgments": [{"chunk_id": "ops-error-503", "relevance": 3}],
+    "forbidden_chunk_ids": ["rq-error-rag-2048"]
+  },
+  {
+    "case_id": "ops-validation-negative-01",
+    "query": "Dense 和 Sparse 应该用什么 RRF 权重？",
+    "knowledge_scope": "operations-course",
+    "kind": "negative",
+    "split": "validation",
+    "judgments": [],
+    "forbidden_chunk_ids": ["rq-rrf-formula"]
+  },
+  {
+    "case_id": "ops-validation-negative-02",
+    "query": "tokenizer.json 的 SHA256 在哪里记录？",
+    "knowledge_scope": "operations-course",
+    "kind": "negative",
+    "split": "validation",
+    "judgments": [],
+    "forbidden_chunk_ids": ["rq-tokenizer-json"]
+  }
+]

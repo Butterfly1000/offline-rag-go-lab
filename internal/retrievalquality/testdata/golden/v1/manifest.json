@@ -1,0 +1,8 @@
+{
+  "dataset_id": "offline-rag-retrieval-quality-golden",
+  "version": "v1",
+  "corpus_sha256": "759f53ea2abb784af9679784ee62533cf9a4cb35ff7c2d14bf6c91169fe2bba5",
+  "cases_sha256": "2046c6f694603ffbff5e70816a336933e220190fb829008fb348b88710860cb2",
+  "train_count": 24,
+  "validation_count": 16
+}
