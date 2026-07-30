@@ -19,6 +19,7 @@
 - Qdrant Memory/Document 独立索引与隔离检索。
 - Memory + Document 双路检索、合并、Token 预算和真实 `/chat`。
 - 文档身份、结构化切块、幂等 Ingestion、Snapshot Alias 和 Retrieval Evaluation。
+- 版本化生产 Golden Dataset、Sparse/Hybrid、严格 Reranker fallback 和校准决策策略。
 
 仓库的目标不是把所有生产技术一次堆进来，而是让每个能力都经历：
 
@@ -36,14 +37,14 @@
 | 坐标 | 范围 | 数量 | 含义 |
 |---|---|---:|---|
 | 已学习 | L01-L23 | 23 | 实践和机器验证完成，用户已确认理解 |
-| 已实现待学习 | L24-L33 | 10 | 实践和机器验证完成，尚待逐节学习确认 |
-| 已规划 | L34-L78 | 45 | 目标、依赖、产物和门禁已确定，尚未实现 |
+| 已实现待学习 | L24-L38 | 15 | 实践和机器验证完成，尚待逐节学习确认 |
+| 已规划 | L39-L78 | 40 | 目标、依赖、产物和门禁已确定，尚未实现 |
 
 因此：
 
 - 下一次教学从 L24 开始。
-- 当前实现边界是 L33。
-- 下一次新实践实现从 L34 开始。
+- 当前实现边界是 L38。
+- 下一次新实践实现从 L39 开始。
 - 当前蓝图终点是 L78。
 
 ## 十四个区域
@@ -55,7 +56,7 @@
 | 三、Long-term Memory | L19-L23 | 已学习 | 提取、决策、保存、遗忘和隔离检索长期事实 |
 | 四、Dual Retrieval | L24-L28 | 已实现待学习 | Memory 与 Document 并行检索、合并和预算 |
 | 五、Document Ingestion | L29-L33 | 已实现待学习 | 身份、切块、幂等构建、Alias 发布和评估 |
-| 六、检索质量工程 | L34-L38 | 已规划 | Golden Dataset、Sparse/Hybrid、Reranker 和决策策略 |
+| 六、检索质量工程 | L34-L38 | 已实现待学习 | Golden Dataset、Sparse/Hybrid、Reranker 和决策策略 |
 | 七、有依据的回答 | L39-L43 | 已规划 | Evidence、Citation、拒答和回答质量评估 |
 | 八、生产级长期记忆 | L44-L48 | 已规划 | Ontology、异步任务、Outbox、重建和行为评估 |
 | 九、生产文档管道 | L49-L53 | 已规划 | 常见格式、OCR、Worker、增量同步和数据血缘 |
@@ -81,12 +82,11 @@ L24-L28 Dual Retrieval
 
 ### 继续建设
 
-从 L34 开始：
+从 L39 开始：
 
 ```text
-L34 Production Golden Dataset
-  -> L35-L38 检索质量工程
-  -> L39-L43 有依据的回答
+L39 Evidence and Citation Contract
+  -> L40-L43 有依据的回答
   -> ...
   -> L78 Production Acceptance Boss
 ```
@@ -107,6 +107,8 @@ L34 Production Golden Dataset
   -> 逐 Point 验证
   -> Alias 原子切换
   -> Golden Retrieval Evaluation
+  -> Dense/Sparse/Hybrid 候选
+  -> Train-only Calibration 与 Policy
 ```
 
 ### 一轮 Chat

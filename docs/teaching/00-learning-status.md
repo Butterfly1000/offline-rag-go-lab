@@ -11,21 +11,21 @@
 | 状态 | 范围 | 数量 | 说明 |
 |---|---|---:|---|
 | `已学习` | L01-L23 | 23 | 实践和机器验证完成，用户已确认理解 |
-| `已实现待学习` | L24-L33 | 10 | 实践和机器验证完成，用户尚未逐节确认理解 |
-| `已规划` | L34-L78 | 45 | 目标、依赖、产物和门禁已确定，尚未实现 |
+| `已实现待学习` | L24-L38 | 15 | 实践和机器验证完成，用户尚未逐节确认理解 |
+| `已规划` | L39-L78 | 40 | 目标、依赖、产物和门禁已确定，尚未实现 |
 
 当前关键坐标：
 
 - 下一次教学：L24。
-- 当前实现边界：L33。
-- 下一次新实践实现：L34。
+- 当前实现边界：L38。
+- 下一次新实践实现：L39。
 - 当前蓝图终点：L78。
 
 按连续主线计算：
 
 - 学习完成度：23 / 78。
-- 实践实现度：33 / 78。
-- 现有已实现课程中待学习确认：10 节。
+- 实践实现度：38 / 78。
+- 现有已实现课程中待学习确认：15 节。
 
 ## 2. 已学习能力
 
@@ -97,6 +97,21 @@
 教学 fixture 的已记录结果是 Recall@3=1、MRR@3=1、scope isolation=100%、
 forbidden hit=0。这不代表生产数据已经泛化，也不代表用户已学会。
 
+### L34-L38：Retrieval Quality Engineering
+
+机器已经验证：
+
+- 24 chunks、40 cases、train/validation 固定 checksum 的版本化 Golden Dataset。
+- Qdrant named Dense/Sparse、字段感知 BM25 和强制 scope filter。
+- 只消费 rank 的 weighted RRF 与逐候选 trace。
+- 本地 `qwen:7b` Reranker 严格协议、JSON Schema、deterministic diversity 和 fallback。
+- train-only PAVA calibration、81 组 viable grid、按 kind 路由和六类 validation 门禁。
+- policy 绑定 dataset/encoder identity，连续真实运行 checksum 一致。
+
+阶段结论不是“所有新组件都默认开启”：L37 Reranker 质量下降且约 30 秒，已明确默认
+关闭；L38 policy validation Recall/MRR/NDCG=1、scope isolation=1、forbidden=0，
+但 negative pass 仍为 0。实现完成不代表用户已经逐节学会。
+
 ## 4. 下一次教学
 
 从 L24 开始，不重讲项目总览，也不直接跳到 L34。
@@ -127,16 +142,17 @@ L24 Hit 与 ownership
 
 ## 5. 下一次新实践实现
 
-如果继续建设新能力，从 L34 `Production Golden Dataset` 开始。
+如果继续建设新能力，从 L39 `Evidence and Citation Contract` 开始。
 
-开始 L34 前必须：
+开始 L39 前必须：
 
-1. 读取 [完整蓝图](00-course-blueprint.md) 的阶段六。
-2. 读取 [L33 Retrieval Evaluation SOP](document-retrieval-evaluation-sop.md) 和当前 Golden Cases。
-3. 从真实或代表性查询建立版本化数据集、失败分类和固定基线。
-4. 为 L34-L38 形成独立设计、实施计划和阶段门禁。
+1. 读取 [完整蓝图](00-course-blueprint.md) 的阶段七。
+2. 读取 [L38 Decision Policy SOP](retrieval-decision-policy-sop.md) 和版本化 Golden Dataset。
+3. 保留 L38 的 train/validation 隔离和回归门禁。
+4. 先定义 evidence/citation identity 与 refusal 边界，再实现回答生成。
 
-不得直接实现 Reranker、Score Calibration 或动态 quota，再倒过来寻找支持它的数据。
+不得直接让模型自由生成 citation，再倒过来寻找来源；source/chunk/version 必须先成为
+可验证契约。
 
 教学与新实现可以在不同任务中推进，但状态必须分开：实现完成只进入
 `已实现待学习`，不会自动变成 `已学习`。
@@ -162,6 +178,7 @@ L24 Hit 与 ownership
 - Long-term Memory：[Memory Batch Log](00-long-term-memory-batch-operation-log.md)
 - Dual Retrieval：[Dual Retrieval Batch Log](00-dual-retrieval-batch-operation-log.md)
 - Document Ingestion：[Document Ingestion Batch Log](00-document-ingestion-batch-operation-log.md)
+- Retrieval Quality：[Retrieval Quality Batch Log](00-retrieval-quality-batch-operation-log.md)
 - 跨环境问题：[Cross-environment Regression](00-cross-environment-regression.md)
 
 新的优化必须由 Golden Cases、真实失败、安全要求或部署约束驱动。

@@ -15,8 +15,8 @@
 读完先复述：
 
 - 当前教学从 L24 开始。
-- 当前实现边界是 L33。
-- 新实践实现从 L34 开始。
+- 当前实现边界是 L38。
+- 新实践实现从 L39 开始。
 - 当前终点是 L78。
 - `已实现待学习` 不能自动当成 `已学习`。
 
@@ -26,8 +26,8 @@
 
 | 工作类型 | 起点 | 说明 |
 |---|---|---|
-| 继续教学 | L24 | L24-L33 已实现和机器验证，待用户逐节确认 |
-| 继续新实践实现 | L34 | 先建立生产 Golden Dataset 和固定检索基线 |
+| 继续教学 | L24 | L24-L38 已实现和机器验证，待用户逐节确认 |
+| 继续新实践实现 | L39 | 先定义 Evidence/Citation identity 和 refusal contract |
 | 更新课程方向 | 权威蓝图 | 需要真实数据、故障、安全或部署证据 |
 
 ## 3. 继续 L24-L28 教学
@@ -70,16 +70,16 @@ Hit 与 ownership
 - 幂等重试与全量 snapshot 发布解决的是不同问题。
 - 教学 fixture 的 1.0 分数不代表生产泛化。
 
-## 5. 继续 L34 新实践
+## 5. 继续 L39 新实践
 
 先读取：
 
-1. [课程蓝图阶段六](00-course-blueprint.md)
-2. [L33 Retrieval Evaluation](document-retrieval-evaluation-sop.md)
-3. [优化 Backlog](00-optimization-backlog.md)
-4. 现有 Golden Cases、评估实现和 batch log
+1. [课程蓝图阶段七](00-course-blueprint.md)
+2. [L38 Retrieval Decision Policy](retrieval-decision-policy-sop.md)
+3. [Retrieval Quality Batch Log](00-retrieval-quality-batch-operation-log.md)
+4. [优化 Backlog](00-optimization-backlog.md)
 
-第一批新实践固定为 L34-L38：
+L34-L38 已完成实现和机器验证：
 
 ```text
 生产 Golden Dataset
@@ -89,8 +89,9 @@ Hit 与 ownership
   -> Calibration、动态 Quota 与回归门禁
 ```
 
-必须先完成 L34 的数据集和基线，再决定后四节的具体技术选择。不能先选 Reranker，再
-修改数据集为它证明效果。
+下一批从 L39 开始进入 Evidence/Citation、Context Packing、拒答和回答质量评估。
+不能因为检索 NDCG=1 就假设回答一定有依据；L38 negative pass=0 是下一阶段必须保留
+的真实边界。
 
 ## 6. 推荐提示词
 
@@ -114,11 +115,11 @@ Hit 与 ownership
 1. world/game-world-map.md
 2. docs/teaching/00-course-blueprint.md
 3. docs/teaching/00-learning-status.md
-4. docs/teaching/document-retrieval-evaluation-sop.md
+4. docs/teaching/retrieval-decision-policy-sop.md
 5. docs/teaching/00-optimization-backlog.md
 
-当前实现到 L33。请从 L34 开始，先建立版本化生产 Golden Dataset、失败分类和固定
-基线；按设计 -> 计划 -> 实现 -> 真实验证 -> SOP -> 审核推进，不能跳到 L35。
+当前实现到 L38。请从 L39 开始，先定义 evidence/citation identity、可反查契约和
+无证据拒答门禁；按设计 -> 计划 -> 实现 -> 真实验证 -> SOP -> 审核推进。
 ```
 
 ## 7. 一轮工作结束前
@@ -138,7 +139,7 @@ Hit 与 ownership
 正确接手的模型会：
 
 - 先读蓝图与状态，再决定动作。
-- 知道教学 L24、实现 L33、新实践 L34、终点 L78。
+- 知道教学 L24、实现 L38、新实践 L39、终点 L78。
 - 区分机器验证和用户学习确认。
 - 不重复实现已完成课程。
 - 不绕过 Golden Dataset 直接做主观优化。

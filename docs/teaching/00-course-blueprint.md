@@ -64,11 +64,11 @@ L78 通过时，系统必须能够：
 ## 4. 当前坐标
 
 - 已学习：L01-L23，共 23 节。
-- 已实现待学习：L24-L33，共 10 节。
-- 已规划：L34-L78，共 45 节。
+- 已实现待学习：L24-L38，共 15 节。
+- 已规划：L39-L78，共 40 节。
 - 下一次教学：从 L24 开始。
-- 下一次新实践实现：从 L34 开始。
-- 当前实现边界：L33。
+- 下一次新实践实现：从 L39 开始。
+- 当前实现边界：L38。
 - 当前蓝图终点：L78。
 
 ## 5. 完整课程路线
@@ -354,37 +354,42 @@ L78 通过时，系统必须能够：
 
 ### L34 · Production Golden Dataset
 
-- 状态：`已规划`
+- 状态：`已实现待学习`
 - 依赖：L33。
-- 实践产物：版本化 query、正例、负例、forbidden hit、问题分类和基线报告。
+- 实践产物：版本化 query、正例、负例、forbidden hit、问题分类、基线报告和
+  [Golden Dataset SOP](production-golden-dataset-sop.md)。
 - 验收：同一 dataset/version 可重复运行，并能把失败归类为解析、切块、召回、排序或隔离问题。
 
 ### L35 · Field-aware Sparse Retrieval
 
-- 状态：`已规划`
+- 状态：`已实现待学习`
 - 依赖：L34、L29-L30。
-- 实践产物：标题、路径、正文、代码字段感知的 BM25/关键词检索和独立评估报告。
+- 实践产物：标题、路径、正文、代码字段感知的 BM25/关键词检索、named sparse vector
+  和 [Sparse SOP](field-aware-sparse-retrieval-sop.md)。
 - 验收：精确术语、标识符和错误码查询对比 Dense 基线，scope 过滤仍为硬门禁。
 
 ### L36 · Hybrid Candidate Fusion
 
-- 状态：`已规划`
+- 状态：`已实现待学习`
 - 依赖：L35、现有 Dense Retrieval。
-- 实践产物：Dense + Sparse 候选和确定性 RRF 等融合策略。
+- 实践产物：Dense + Sparse 候选、rank-only weighted RRF、trace 和
+  [Hybrid SOP](hybrid-retrieval-fusion-sop.md)。
 - 验收：一次查询的两路候选可追踪，融合结果稳定，并在 L34 数据集上对比单路基线。
 
 ### L37 · Reranker and Diversity
 
-- 状态：`已规划`
+- 状态：`已实现待学习`
 - 依赖：L36。
-- 实践产物：统一候选 Reranker、章节/文档多样性约束和无 Reranker fallback。
+- 实践产物：严格 JSON Schema Reranker、章节/文档多样性约束、无 Reranker fallback
+  和 [Reranker SOP](reranker-diversity-sop.md)。
 - 验收：报告 Recall/NDCG、回答前延迟和资源成本；Reranker 故障不会破坏 ownership。
 
 ### L38 · Retrieval Decision Policy
 
-- 状态：`已规划`
+- 状态：`已实现待学习`
 - 依赖：L34-L37。
-- 实践产物：Score Calibration、动态 quota、阈值、决策原因和检索回归门禁。
+- 实践产物：PAVA Score Calibration、动态 quota/权重/阈值、版本化 policy、决策原因、
+  确定性 checksum 和 [Decision Policy SOP](retrieval-decision-policy-sop.md)。
 - 验收：按问题类型记录策略选择；校准和 quota 调整有数据支持；退化时回到确定性基线。
 
 ## 阶段七：有依据的回答（L39-L43）

@@ -322,3 +322,79 @@ default_enabled=false
 `qwen:7b` 是通用生成模型，不是专用 cross-encoder。本次 validation 质量下降且延迟
 显著增加，因此只保留可替换实现与安全回退，默认策略关闭 Reranker。L38 将只用 train
 选择策略，validation 仅做最终回归门禁。
+
+## 第 38 节：Calibrated Retrieval Decision Policy
+
+### 影响分析
+
+本节只读本地 retrieval-quality Qdrant collection 和 Ollama embedding。唯一写入是
+Git 忽略的 `.cache/retrieval-quality/policy-v1.json`；没有修改 collection、alias、
+Docker 数据、MySQL 或远端状态。
+
+### RED / GREEN 证据
+
+依次完成并验证：
+
+- PAVA 相邻块合并、重复 score、单调/clamp、非法输入；
+- Brier/ECE 固定算例；
+- 固定 split 候选采样和二元 label；
+- validation trap 不参与 selection；
+- exact/code/semantic/mixed/unknown 路由；
+- grid canonical tie、dataset/encoder/checksum identity；
+- calibrated threshold abstain；
+- infrastructure fallback 与 integrity hard failure；
+- scope、forbidden、negative、Recall、NDCG、3× p95 六类回归门禁；
+- 162/81 完整/可行网格和缓存重放。
+
+### 真实策略选择
+
+完整 grid 162，L37 默认关闭的 rerank=true 排除后评估 81 组，形成 396 条 train
+outcome。validation 在 policy 确定后才运行。
+
+最终路由：
+
+```text
+code     -> Dense  weights=1/1   quota=10 threshold=0.25 rerank=false
+exact    -> Hybrid weights=.5/.5 quota=10 threshold=0.25 rerank=false
+mixed    -> Hybrid weights=.5/.5 quota=10 threshold=0.25 rerank=false
+semantic -> Hybrid weights=.5/.5 quota=10 threshold=0    rerank=false
+unknown  -> Hybrid weights=1/1   quota=10 threshold=0    rerank=false
+```
+
+### 确定性缺陷与修复
+
+首版用纳秒 p95 打破质量并列，重复运行的 semantic 权重从 `.5/2` 变成 `1/2`，
+checksum 漂移。25ms/250ms 细等级仍会被模型 warm/cold 跨越。
+
+最终改为操作级 latency tier：`<=5s`、`<=60s`、`>60s`；同等级使用 canonical
+params。精确性能由 validation 3× 门禁负责。修复后连续两次：
+
+```text
+checksum=737d487569d553249941f979450f9751fae34715fa393cc1543b7ba116d30310
+routes/params 完全相同
+```
+
+### 最终真实门禁
+
+最后一次运行：
+
+```text
+Dense validation  Recall@10=1 MRR@10=1 NDCG@10=1 p95=113.665ms
+Policy validation Recall@10=1 MRR@10=1 NDCG@10=1 p95=111.473ms
+negative_pass=0
+scope_isolation=1 forbidden_hits=0
+regression_passed=true failures=[]
+```
+
+校准 validation Brier/ECE：
+
+```text
+Dense  0.012097 / 0.017650
+Sparse 0.010801 / 0.016990
+Hybrid 0.031773 / 0.014947
+```
+
+### 当前边界
+
+负例通过率仍为 0，只满足“不低于 Dense baseline”，没有证明无依据拒答。L39-L43
+继续解决 evidence、citation、refusal 和回答质量；本批次按用户要求停在 L38。

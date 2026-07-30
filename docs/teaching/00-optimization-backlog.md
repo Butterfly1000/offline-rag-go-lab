@@ -66,9 +66,9 @@
 | Memory | 6. MySQL outbox 与 Qdrant rebuild worker | `已纳入 L47` |
 | Memory | 7. 跨 key 语义去重 | `已纳入 L44` |
 | Memory | 8. Qdrant 索引漂移扫描与检索评估 | `已纳入 L47-L48` |
-| Dual Retrieval | 1. 跨来源 Reranker | `已纳入 L37` |
-| Dual Retrieval | 2. Score Calibration | `已纳入 L38` |
-| Dual Retrieval | 3. 动态 Quota | `已纳入 L38` |
+| Dual Retrieval | 1. 跨来源 Reranker | L37 已完成文档候选接口/回退；Memory+Document 跨来源仍保留 |
+| Dual Retrieval | 2. Score Calibration | L38 已完成 Dense/Sparse/Hybrid PAVA；跨 collection 仍保留 |
+| Dual Retrieval | 3. 动态 Quota | L38 已完成检索策略 quota；Memory/Document 来源配额仍保留 |
 
 映射不代表这些优化已经实现。只有原始最低正确性已在现有课程验证的项目才标记
 `已由 ... 基线覆盖`；其余项目仍是 L34-L78 的规划内容。
@@ -334,6 +334,10 @@ Office、HTML 或其他编程语言。
 
 为什么需要：当前 memory 与 document 使用独立排序和固定 quota，不假设两个 collection 的 raw score 已校准；它稳定可解释，但未学习“对当前问题哪一条更有用”。
 
+当前进度：L37 已为文档 Dense/Sparse Hybrid top 20 建立窄 Reranker 接口、严格 ID
+协议、JSON Schema、diversity 和无服务 fallback。真实 `qwen:7b` validation 更差且
+约 30 秒，所以默认关闭；尚未把 Memory 与 Document 候选放入统一跨来源 Reranker。
+
 何时再做：积累包含问题、候选和人工相关性标签的评估集后。
 
 目标结果：用统一 reranker 对已隔离、已校验的候选重排，并对比无 reranker 基线的 Recall/NDCG 与延迟；没有评估数据前不引入额外模型复杂度。
@@ -342,6 +346,10 @@ Office、HTML 或其他编程语言。
 
 为什么需要：不同 collection 的 score 分布会随文本长度、数据密度和索引内容变化，数值相同不代表相关性相同。
 
+当前进度：L38 已用 train-only PAVA 校准 Dense、Sparse 和 Hybrid，并报告 validation
+Brier/ECE；policy 绑定 dataset/encoder checksum。Memory collection 与 Document
+collection 的联合概率校准尚未实现。
+
 何时再做：获得两路真实 score 分布和正负样例后。
 
 目标结果：按来源校准为可比较概率或等级，并持续监控数据漂移；不能只写固定乘法权重。
@@ -349,6 +357,9 @@ Office、HTML 或其他编程语言。
 ### 3. 动态 Quota
 
 为什么需要：固定 memory/document 配额容易理解，但纯知识问题可能不需要 memory，强个性化问题可能更依赖 memory。
+
+当前进度：L38 已在检索策略网格中评估 `5/10/20` candidate quota，并按 query kind
+保存决策；这仍是文档检索内部 quota，不是 Memory/Document 总 token 预算的动态分配。
 
 何时再做：能按问题类型评估回答质量和 token 成本后。
 
