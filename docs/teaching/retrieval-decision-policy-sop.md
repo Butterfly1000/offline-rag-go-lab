@@ -169,7 +169,7 @@ Policy 保存：
 ## 7. 面试复述
 
 > 我用 train split 的候选和二元相关性标注，通过 PAVA 分别校准 Dense、Sparse、
-> Hybrid score；再按 query kind 在固定网格里用 train NDCG、Recall、操作级延迟和
+> Hybrid score；再按 query kind 在固定网格里用 train NDCG、Recall、同批实测 p95 和
 > canonical 参数选路。validation 不参与选参，只检查隔离、forbidden、负例、质量和
 > 3 倍 p95 门禁。Policy 绑定 dataset 与 encoder checksum，重复运行 checksum 相同；
 > 基础设施故障可回到 Hybrid/Dense，identity 错误必须硬失败。

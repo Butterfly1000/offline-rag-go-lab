@@ -1,6 +1,6 @@
 # AI 小白课程地图（冻结 manifest）
 
-本文件冻结 `docs/teaching/` **直系目录**中 42 篇非 `00-*` 源课与其一对一小白教材目标。`docs/teaching/beginner/` 下的文件永不作为来源。后续批次不得增删或替换来源，只能补齐目标链接与三角色验收状态。
+本文件冻结 `docs/teaching/` **直系目录**中 47 篇非 `00-*` 源课与其一对一小白教材目标。`docs/teaching/beginner/` 下的文件永不作为来源。后续批次不得增删或替换来源，只能补齐目标链接与三角色验收状态。
 
 当前批已创建的目标以链接显示；其余目标路径已冻结，待对应批次创建后再转为链接。
 
@@ -48,9 +48,14 @@
 | L31 | Ingestion | `idempotent-document-ingestion-sop.md` | [L31](L31-idempotent-ingestion.md) | 幂等入库 |
 | L32 | Ingestion | `document-snapshot-alias-sop.md` | [L32](L32-snapshot-alias.md) | 快照与 alias |
 | L33 | Ingestion | `document-retrieval-evaluation-sop.md` | [L33](L33-retrieval-evaluation.md) | 检索评估 |
+| L34 | Retrieval quality | `production-golden-dataset-sop.md` | [L34](L34-production-golden-dataset.md) | 版本化 Golden Dataset |
+| L35 | Retrieval quality | `field-aware-sparse-retrieval-sop.md` | [L35](L35-field-aware-sparse-retrieval.md) | 字段感知 Sparse |
+| L36 | Retrieval quality | `hybrid-retrieval-fusion-sop.md` | [L36](L36-hybrid-rrf.md) | Hybrid RRF 融合 |
+| L37 | Retrieval quality | `reranker-diversity-sop.md` | [L37](L37-reranker-diversity.md) | Reranker 与多样性 |
+| L38 | Retrieval quality | `retrieval-decision-policy-sop.md` | [L38](L38-retrieval-decision-policy.md) | 检索决策策略 |
 
-验收状态：F01–F09、L01–L33 共 42 课均为“教师完成、学生 APPROVED、正确性审核 FINAL APPROVED”；最终机械审查已完成：42 源/42 目标/42 唯一，42 课 × 12 = 504 栏目，本地链接全部存在、无秘密，`git diff --check` 与最终 HEAD 上 `go test ./... -count=1` 均通过。
+验收状态：F01–F09、L01–L38 共 47 课均为“教师完成、学生 APPROVED、正确性审核 FINAL APPROVED”；最终机械审查已完成：47 源/47 目标/47 唯一，47 课 × 12 = 564 栏目，本地链接全部存在、无秘密，`git diff --check` 与最终 HEAD 上 `go test ./... -count=1` 均通过。
 
 ## 三分钟复述与建议阅读顺序
 
-按阶段顺读：F01–F09 先认识 gateway、窗口和 tokenizer；L01–L12 把 token 与预算算清；L13–L18 接上摘要；L19–L23 建立可检索记忆；L24–L28 把记忆和文档安全地接入 chat；L29–L33 完成文档身份、切块、幂等入库、alias 发布与评估。三分钟复述就是：**先计量上下文，再保存和检索可信资料，最后用可验证、可回退的文档发布闭环证明它真的可用。**
+按阶段顺读：F01–F09 先认识 gateway、窗口和 tokenizer；L01–L12 把 token 与预算算清；L13–L18 接上摘要；L19–L23 建立可检索记忆；L24–L28 把记忆和文档安全地接入 chat；L29–L33 完成文档身份、切块、幂等入库、alias 发布与评估；L34–L38 再把 Golden Dataset、Sparse、RRF、Reranker 门禁和 train-only 策略选择串成检索质量闭环。三分钟复述就是：**先计量上下文，再保存和检索可信资料，用可验证、可回退的发布闭环保证资料可用；随后用版本化题库测量检索，以精确词、语义融合和独立 reranker 门禁为基础，只用 train 选策略、用 validation 守回归。**
