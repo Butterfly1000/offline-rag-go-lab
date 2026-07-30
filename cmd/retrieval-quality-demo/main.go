@@ -18,6 +18,10 @@ func main() {
 	switch os.Args[1] {
 	case "dataset":
 		err = runDataset(ctx, os.Args[2:], os.Stdout)
+	case "index":
+		err = runIndex(ctx, os.Args[2:], os.Stdout)
+	case "sparse":
+		err = runSparse(ctx, os.Args[2:], os.Stdout)
 	default:
 		err = fmt.Errorf("unknown subcommand %q", os.Args[1])
 	}

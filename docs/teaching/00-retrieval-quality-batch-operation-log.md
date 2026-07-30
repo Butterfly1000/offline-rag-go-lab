@@ -89,3 +89,100 @@ scope_isolation=1 forbidden_hits=0 passed=true
 当前 Dense baseline 不会 abstain，因此 8 个负例全部失败；该结果被保留为 L38 阈值
 门禁。Corpus 每个 scope 只有 12 chunks 而 K=10，所以 Recall@10 很高不能证明生产
 泛化。L35 将在不改 dataset 的前提下建立独立 Sparse baseline。
+
+## 第 35 节：Field-aware Sparse Retrieval
+
+### 影响分析
+
+Docker Desktop 原先未运行，本节先启动已安装的 Docker Desktop，再启动已有
+`qdrant` 容器。没有新建容器或存储卷。
+
+写操作严格限定为：
+
+```text
+offline_rag_retrieval_quality_lab_v1
+offline_rag_retrieval_quality_lab_active
+```
+
+执行前 collection 清单只有：
+
+```text
+offline_rag_document_chunks_v1
+offline_rag_document_ingestion_lab_v1
+offline_rag_document_ingestion_lab_v2
+offline_rag_memory_items_v1
+ollama_chat_memory
+```
+
+原 alias `offline_rag_document_ingestion_lab_active -> ..._v2` 保持不变。
+
+### RED 证据
+
+领域层第一次编译报告 `NewQdrant`、`SparseVector`、`IndexedChunk`、
+`StablePointID` 等不存在。第二轮报告 `Inspect`、`NewQdrantDenseStrategy` 和
+`NewQdrantSparseStrategy` 不存在。
+
+命令层：
+
+```bash
+go test ./cmd/retrieval-quality-demo -run 'TestIndexDataset|TestBuildSparseReport'
+```
+
+结果：FAIL，`indexDataset` 和 `buildSparseReport` 不存在。
+
+### GREEN 证据
+
+```bash
+go test ./cmd/retrieval-quality-demo ./internal/retrievalquality
+```
+
+结果：PASS。包含真实 `httptest` HTTP 边界，不只检查 fake。
+
+覆盖：
+
+- 字段权重、BM25 饱和和长度归一化
+- Sparse indices 排序/合并与非法 token/value
+- named dense/sparse schema 和 `modifier=idf`
+- named-vector upsert 与稳定 point ID
+- Dense/Sparse 请求的强制 scope filter
+- payload scope、content hash、model、encoder identity 重校验
+- collection 验证先于 alias 激活
+
+### 真实 index 证据
+
+```bash
+go run ./cmd/retrieval-quality-demo index \
+  --config config/recent-chat.env \
+  --dataset internal/retrievalquality/testdata/golden/v1 \
+  --apply --activate
+```
+
+结果：
+
+```text
+collection=offline_rag_retrieval_quality_lab_v1
+status=green points=24 indexed_vectors=24
+dense=size 1024 distance Cosine
+sparse=modifier idf
+payload indexes=knowledge_scope,document_id,chunk_id
+alias=offline_rag_retrieval_quality_lab_active
+```
+
+执行后原五个 collections 全部保留，只新增专用 retrieval-quality collection。全局
+alias 同时保留 ingestion alias 和新增 retrieval-quality alias。
+
+同一 `index --apply --activate` 再执行一次命中已有 schema 校验和 alias no-op 分支，
+仍为 green/24 points，没有增加重复 point。
+
+### 真实 Sparse 评估
+
+```text
+train Recall@10=0.775 MRR@10=0.8 NDCG@10=0.789358
+validation Recall@10=0.666667 MRR@10=0.666667 NDCG@10=0.666667
+validation exact/code/mixed NDCG@10=1
+validation semantic NDCG@10=0
+validation p50=12.408ms p95=15.021ms
+scope_isolation=1 forbidden_hits=0
+```
+
+Sparse 的精确能力和语义缺口都由固定 L34 数据集暴露，没有为结果修改 case。
