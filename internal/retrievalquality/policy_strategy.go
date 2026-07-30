@@ -2,36 +2,93 @@ package retrievalquality
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"time"
 )
 
 type PolicyStrategy struct {
-	policy     Policy
-	strategies map[StrategyName]Strategy
+	policy  Policy
+	dense   Strategy
+	sparse  Strategy
+	hybrids map[string]Strategy
 }
 
-func NewPolicyStrategy(policy Policy, strategies map[StrategyName]Strategy) (*PolicyStrategy, error) {
+func NewPolicyStrategy(policy Policy, dense, sparse Strategy) (*PolicyStrategy, error) {
+	if dense == nil || sparse == nil {
+		return nil, fmt.Errorf("policy dense and sparse strategies are required")
+	}
 	for _, name := range []StrategyName{StrategyDense, StrategySparse, StrategyHybrid} {
-		if strategies[name] == nil {
-			return nil, fmt.Errorf("policy strategy %q is required", name)
-		}
 		calibrator, exists := policy.Calibrators[name]
-		if !exists || len(calibrator.Breakpoints) == 0 ||
-			len(calibrator.Breakpoints) != len(calibrator.Values) {
+		if !exists {
 			return nil, fmt.Errorf("policy calibrator %q is required", name)
 		}
+		if err := validatePolicyCalibrator(calibrator); err != nil {
+			return nil, fmt.Errorf("policy calibrator %q: %w", name, err)
+		}
+	}
+	requiredKinds := map[QueryKind]bool{
+		QueryExact: true, QueryCode: true, QuerySemantic: true, QueryMixed: true,
 	}
 	for kind, route := range policy.Routes {
+		if !requiredKinds[kind] {
+			return nil, fmt.Errorf("policy route kind %q is invalid", kind)
+		}
+		delete(requiredKinds, kind)
+		if !validPolicyStrategyName(route.Strategy) {
+			return nil, fmt.Errorf("policy route %q strategy %q is invalid", kind, route.Strategy)
+		}
 		if err := validatePolicyParams(route.Params); err != nil {
 			return nil, fmt.Errorf("policy route %q: %w", kind, err)
 		}
+		routeCalibrator, exists := policy.RouteCalibrators[kind]
+		if !exists {
+			return nil, fmt.Errorf("policy route calibrator %q is required", kind)
+		}
+		if err := validatePolicyCalibrator(routeCalibrator); err != nil {
+			return nil, fmt.Errorf("policy route calibrator %q: %w", kind, err)
+		}
+	}
+	for kind := range requiredKinds {
+		return nil, fmt.Errorf("policy route %q is required", kind)
+	}
+	if len(policy.RouteCalibrators) != len(policy.Routes) {
+		return nil, fmt.Errorf("policy route calibrators must match policy routes")
+	}
+	if !validPolicyStrategyName(policy.UnknownRoute.Strategy) {
+		return nil, fmt.Errorf("policy unknown strategy %q is invalid", policy.UnknownRoute.Strategy)
 	}
 	if err := validatePolicyParams(policy.UnknownRoute.Params); err != nil {
 		return nil, fmt.Errorf("policy unknown route: %w", err)
 	}
-	return &PolicyStrategy{policy: policy, strategies: strategies}, nil
+	result := &PolicyStrategy{
+		policy: policy, dense: dense, sparse: sparse,
+		hybrids: map[string]Strategy{},
+	}
+	routes := make([]PolicyRoute, 0, len(policy.Routes)+1)
+	for _, route := range policy.Routes {
+		routes = append(routes, route)
+	}
+	routes = append(routes, policy.UnknownRoute)
+	for _, route := range routes {
+		key := runtimeWeightsKey(route.Params)
+		if result.hybrids[key] != nil {
+			continue
+		}
+		hybrid, err := NewHybridStrategy(
+			dense, sparse,
+			FusionWeights{Dense: route.Params.DenseWeight, Sparse: route.Params.SparseWeight},
+			HybridRuntime,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.hybrids[key] = hybrid
+	}
+	return result, nil
 }
 
 func (s *PolicyStrategy) Name() string { return "calibrated_retrieval_policy" }
@@ -54,11 +111,18 @@ func (s *PolicyStrategy) Search(ctx context.Context, query Query) (SearchResult,
 	var selected StrategyName
 	var warnings []string
 	for index, name := range order {
-		current, err := s.strategies[name].Search(ctx, searchQuery)
+		strategy, err := s.strategy(name, route.Params)
+		if err != nil {
+			return SearchResult{}, err
+		}
+		current, err := strategy.Search(ctx, searchQuery)
 		if err == nil {
 			result = current
 			selected = name
-			if index > 0 {
+			if name == StrategyHybrid && isDenseFallback(current.Candidates) {
+				selected = StrategyDense
+			}
+			if index > 0 || selected != name {
 				warnings = append(warnings, fmt.Sprintf(
 					"policy fallback %s->%s", route.Strategy, selected,
 				))
@@ -115,6 +179,115 @@ func (s *PolicyStrategy) Search(ctx context.Context, query Query) (SearchResult,
 		Candidates: candidates, Abstained: abstained,
 		Duration: duration, Warnings: warnings,
 	}, nil
+}
+
+func validPolicyStrategyName(name StrategyName) bool {
+	return name == StrategyDense || name == StrategySparse || name == StrategyHybrid
+}
+
+func validatePolicyCalibrator(calibrator Calibrator) error {
+	if len(calibrator.Breakpoints) == 0 ||
+		len(calibrator.Breakpoints) != len(calibrator.Values) {
+		return fmt.Errorf("breakpoints and values must have the same non-zero length")
+	}
+	for index := range calibrator.Breakpoints {
+		if !finite(calibrator.Breakpoints[index]) || !finite(calibrator.Values[index]) ||
+			calibrator.Values[index] < 0 || calibrator.Values[index] > 1 {
+			return fmt.Errorf("item %d must be finite with value in [0,1]", index)
+		}
+		if index > 0 && (calibrator.Breakpoints[index] <= calibrator.Breakpoints[index-1] ||
+			calibrator.Values[index] < calibrator.Values[index-1]) {
+			return fmt.Errorf("breakpoints must increase and values must not decrease")
+		}
+	}
+	return nil
+}
+
+func isDenseFallback(candidates []Candidate) bool {
+	if len(candidates) == 0 {
+		return false
+	}
+	for _, candidate := range candidates {
+		if candidate.Reason != "dense_fallback" {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *PolicyStrategy) strategy(name StrategyName, params PolicyParams) (Strategy, error) {
+	switch name {
+	case StrategyDense:
+		return s.dense, nil
+	case StrategySparse:
+		return s.sparse, nil
+	case StrategyHybrid:
+		strategy := s.hybrids[runtimeWeightsKey(params)]
+		if strategy == nil {
+			return nil, fmt.Errorf("policy hybrid weights are not initialized")
+		}
+		return strategy, nil
+	default:
+		return nil, fmt.Errorf("policy strategy %q is invalid", name)
+	}
+}
+
+func runtimeWeightsKey(params PolicyParams) string {
+	return fmt.Sprintf("%.17g/%.17g", params.DenseWeight, params.SparseWeight)
+}
+
+func LoadPolicyStrategy(
+	path string,
+	dataset Dataset,
+	identity EncoderIdentity,
+	dense, sparse Strategy,
+) (Strategy, []string, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil, nil, fmt.Errorf("policy path is required")
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fallback, fallbackErr := NewHybridStrategy(
+				dense, sparse, FusionWeights{Dense: 1, Sparse: 1}, HybridRuntime,
+			)
+			if fallbackErr != nil {
+				return nil, nil, fallbackErr
+			}
+			return fallback, []string{"policy artifact missing; using equal-weight RRF"}, nil
+		}
+		return nil, nil, fmt.Errorf("open policy artifact: %w", err)
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	var policy Policy
+	if err := decoder.Decode(&policy); err != nil {
+		return nil, nil, fmt.Errorf("decode policy artifact: %w", err)
+	}
+	if err := ensurePolicyEOF(decoder); err != nil {
+		return nil, nil, err
+	}
+	if err := policy.ValidateIdentity(dataset, identity); err != nil {
+		return nil, nil, err
+	}
+	strategy, err := NewPolicyStrategy(policy, dense, sparse)
+	if err != nil {
+		return nil, nil, err
+	}
+	return strategy, nil, nil
+}
+
+func ensurePolicyEOF(decoder *json.Decoder) error {
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("policy artifact contains trailing JSON")
+		}
+		return fmt.Errorf("decode policy artifact trailer: %w", err)
+	}
+	return nil
 }
 
 func fallbackOrder(strategy StrategyName) []StrategyName {

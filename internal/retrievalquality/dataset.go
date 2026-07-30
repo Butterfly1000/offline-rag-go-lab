@@ -203,7 +203,8 @@ func (d Dataset) Validate() error {
 		forbidden := map[string]bool{}
 		for _, rawID := range item.ForbiddenChunkIDs {
 			id := strings.TrimSpace(rawID)
-			if _, exists := chunks[id]; !exists {
+			chunk, exists := chunks[id]
+			if !exists {
 				return fmt.Errorf("case %q forbidden references unknown chunk %q", item.CaseID, id)
 			}
 			if forbidden[id] {
@@ -211,6 +212,12 @@ func (d Dataset) Validate() error {
 			}
 			if judged[id] {
 				return fmt.Errorf("case %q chunk %q is both judged and forbidden", item.CaseID, id)
+			}
+			if chunk.KnowledgeScope == item.KnowledgeScope {
+				return fmt.Errorf(
+					"case %q forbidden chunk must belong to another knowledge_scope: %q",
+					item.CaseID, id,
+				)
 			}
 			forbidden[id] = true
 		}

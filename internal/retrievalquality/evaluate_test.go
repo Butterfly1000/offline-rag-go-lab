@@ -91,6 +91,12 @@ func TestEvaluateClassifiesStrategyFailure(t *testing.T) {
 	}
 }
 
+func TestStageForStrategyClassifiesRerankerBeforeHybridBase(t *testing.T) {
+	if got := stageForStrategy("hybrid_rerank_diversity"); got != FailureRerank {
+		t.Fatalf("failure_stage=%q, want %q", got, FailureRerank)
+	}
+}
+
 func evaluationDataset() Dataset {
 	return Dataset{
 		Manifest: DatasetManifest{DatasetID: "test", Version: "v1", TrainCount: 0, ValidationCount: 2},

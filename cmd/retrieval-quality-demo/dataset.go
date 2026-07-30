@@ -40,6 +40,9 @@ func runDataset(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if err := validateLocalHTTPURL("OLLAMA_BASE_URL", baseURL); err != nil {
+		return err
+	}
 	model, err := fileconfig.Required(values, "OLLAMA_EMBED_MODEL")
 	if err != nil {
 		return err

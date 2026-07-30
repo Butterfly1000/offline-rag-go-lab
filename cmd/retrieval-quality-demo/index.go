@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 
 	"offline-rag-go-lab/internal/memoryitem"
@@ -74,8 +75,11 @@ func runIndex(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	report.Applied = true
-	if report.VectorSize != 1024 || !strings.EqualFold(report.Status, "green") {
-		return fmt.Errorf("verified index uses vector_size=%d status=%q, want 1024/green", report.VectorSize, report.Status)
+	if report.VectorSize != retrievalquality.RetrievalQualityVectorSize || !strings.EqualFold(report.Status, "green") {
+		return fmt.Errorf(
+			"verified index uses vector_size=%d status=%q, want %d/green",
+			report.VectorSize, report.Status, retrievalquality.RetrievalQualityVectorSize,
+		)
 	}
 	return encodeIndented(output, report)
 }
@@ -100,13 +104,18 @@ func indexDataset(
 	if err != nil {
 		return indexCommandReport{}, fmt.Errorf("embed index corpus: %w", err)
 	}
-	if len(vectors) != len(dataset.Corpus) || len(vectors) == 0 || len(vectors[0]) == 0 {
+	if len(vectors) != len(dataset.Corpus) || len(vectors) == 0 {
 		return indexCommandReport{}, fmt.Errorf("index embedding count or dimension is invalid")
 	}
-	vectorSize := len(vectors[0])
+	vectorSize := retrievalquality.RetrievalQualityVectorSize
 	for i, vector := range vectors {
 		if len(vector) != vectorSize {
 			return indexCommandReport{}, fmt.Errorf("index vector %d dimension=%d, want %d", i, len(vector), vectorSize)
+		}
+		for j, value := range vector {
+			if math.IsNaN(float64(value)) || math.IsInf(float64(value), 0) {
+				return indexCommandReport{}, fmt.Errorf("index vector %d value %d must be finite", i, j)
+			}
 		}
 	}
 	stats, err := retrievalquality.BuildFieldStats(dataset.Corpus, tokenizer)

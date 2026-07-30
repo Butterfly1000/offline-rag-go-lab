@@ -54,6 +54,32 @@ func TestQdrantEnsureCollectionCreatesNamedDenseSparseAndIndexes(t *testing.T) {
 	}
 }
 
+func TestQdrantRejectsNonContractDimensionBeforeHTTP(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		requests++
+	}))
+	defer server.Close()
+	client, err := NewQdrant(server.URL, RetrievalQualityCollection, RetrievalQualityAlias)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.EnsureCollection(context.Background(), 2); err == nil {
+		t.Fatal("non-contract dimension must fail")
+	}
+	if requests != 0 {
+		t.Fatalf("requests=%d, want zero", requests)
+	}
+}
+
+func TestQdrantRejectsRemoteBaseURL(t *testing.T) {
+	if _, err := NewQdrant(
+		"https://qdrant.example.com", RetrievalQualityCollection, RetrievalQualityAlias,
+	); err == nil {
+		t.Fatal("retrieval-quality lab must reject remote Qdrant")
+	}
+}
+
 func TestQdrantUpsertUsesNamedVectorsAndStableIdentity(t *testing.T) {
 	var body map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +98,7 @@ func TestQdrantUpsertUsesNamedVectorsAndStableIdentity(t *testing.T) {
 		Content: "body", ContentHash: sha256Hex([]byte("body")),
 	}
 	err := client.Upsert(context.Background(), IndexedChunk{
-		Chunk: chunk, Dense: []float32{1, 0},
+		Chunk: chunk, Dense: denseVectorFixture(),
 		Sparse:         SparseVector{Indices: []uint32{3, 8}, Values: []float32{1.5, 2}},
 		EmbeddingModel: "bge-m3", EncoderID: "qwen2:test",
 	})
@@ -103,7 +129,7 @@ func TestQdrantDenseAndSparseQueriesAlwaysSendScopeFilter(t *testing.T) {
 	}))
 	defer server.Close()
 	client, _ := NewQdrant(server.URL, RetrievalQualityCollection, RetrievalQualityAlias)
-	if _, err := client.QueryDense(context.Background(), "scope-a", []float32{1, 0}, 10); err != nil {
+	if _, err := client.QueryDense(context.Background(), "scope-a", denseVectorFixture(), 10); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := client.QuerySparse(context.Background(), "scope-a", SparseVector{Indices: []uint32{7}, Values: []float32{1}}, 10); err != nil {
@@ -119,6 +145,12 @@ func TestQdrantDenseAndSparseQueriesAlwaysSendScopeFilter(t *testing.T) {
 			t.Fatalf("missing scope filter: %v", request)
 		}
 	}
+}
+
+func denseVectorFixture() []float32 {
+	result := make([]float32, RetrievalQualityVectorSize)
+	result[0] = 1
+	return result
 }
 
 func TestQdrantRejectsCrossScopeAndEncoderMismatch(t *testing.T) {

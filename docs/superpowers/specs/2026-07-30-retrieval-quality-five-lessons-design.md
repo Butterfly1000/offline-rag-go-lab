@@ -47,7 +47,8 @@ collection 误作为目标。旧数据和本批数据之间不做原地迁移。
 
 新增聚焦包 `internal/retrievalquality`，而不是继续扩张
 `internal/documentingest`。现有 L33 evaluator 作为固定 Dense 教学基线保留，新包
-负责生产数据集、Sparse 编码、Hybrid 融合、Reranker、多样性、校准和决策策略。
+负责生产形态的版本化合成评估数据集、Sparse 编码、Hybrid 融合、Reranker、
+多样性、校准和决策策略；当前 fixture 不代表真实生产查询分布。
 
 数据流为：
 
@@ -194,18 +195,19 @@ L38 不训练新模型。它从 train split 的标注和候选特征中产生版
 - 用 deterministic isotonic regression（PAVA）分别校准 Dense、Sparse 和 Hybrid
   score 到 `[0,1]`
 - 报告 train 与 validation 的 Brier score、ECE 和阈值行为
-- 按 query kind 选择候选策略：exact/code 偏 Sparse，semantic 偏 Dense，mixed
-  选择 Hybrid，unknown 使用等权 RRF
-- 根据 train 数据在有限候选网格中选择 dense/sparse weights、candidate quota、
-  rerank enabled 和 minimum relevance threshold
+- 按 query kind 在 Dense、Sparse、Hybrid 中由 train 指标选择，unknown 使用等权 RRF
+- 根据 train 数据在 81 组有限候选网格中选择 dense/sparse weights、candidate
+  quota 和 minimum relevance threshold
 - 选择顺序固定为 validation-independent 的 train NDCG@10、Recall@10、p95 latency、
   参数字典序，保证重复运行得到同一 policy
 
 Policy artifact 保存 dataset checksum、corpus checksum、encoder identity、候选参数、
 校准分段、生成时间之外的确定性 policy checksum。加载时身份不匹配即拒绝运行。
 
-每个请求输出策略名称、query kind、权重、quota、Reranker 是否启用、fallback 和
-decision reasons。validation 只用于最终报告与回归门禁，不能参与选参。
+每个请求输出策略名称、query kind、权重、quota、fallback 和 decision reasons。
+Reranker 是否具备启用资格由 L37 独立门禁决定，不进入 L38 artifact 或网格，避免
+validation 结论反向改变 train 候选空间。validation 只用于最终报告与回归门禁，
+不能参与选参。
 
 回归门禁为：
 

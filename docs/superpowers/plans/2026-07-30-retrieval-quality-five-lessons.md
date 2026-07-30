@@ -447,9 +447,13 @@ Grid values are finite and checked in:
 dense_weight: 0.5, 1.0, 2.0
 sparse_weight: 0.5, 1.0, 2.0
 candidate_quota: 5, 10, 20
-rerank_enabled: false, true
 minimum_relevance: 0.0, 0.25, 0.5
 ```
+
+审查修订（2026-07-31）：`rerank_enabled` 从 L38 schema/grid 移除。Reranker 是否可启用
+由 L37 独立门禁决定，避免用 validation 结果删减 L38 的 train 候选。L38 固定评估
+81 组纯检索参数；Dense/Sparse 每个 case 只测一次，Hybrid 权重共享同批候选并用两路
+实测延迟最大值，随后按 train NDCG@10、Recall@10、较低 p95 和 canonical 参数排序。
 
 Rank candidates by train NDCG@10, Recall@10, lower p95, then canonical parameter
 JSON. Persist the selected per-kind routes, calibrators, identities, reasons and

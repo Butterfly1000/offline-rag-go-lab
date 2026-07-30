@@ -1,7 +1,8 @@
 # 第 38 节：校准后的检索决策策略
 
-本节不训练新模型。它把 L34 的固定 train 标注、L35 Sparse、L36 Hybrid 和 L37
-Reranker 门禁组合成一份可版本化的检索策略。核心边界是：
+本节不训练新模型。它把 L34 的固定 train 标注、L35 Sparse 和 L36 Hybrid 组合成
+一份可版本化的检索策略。L37 独立决定 Reranker 是否具备启用资格，不把 validation
+结论反向写进 L38 的候选网格。核心边界是：
 
 ```text
 train：拟合校准器、选择参数和路由
@@ -17,7 +18,9 @@ go run ./cmd/retrieval-quality-demo policy \
   --policy-output .cache/retrieval-quality/policy-v1.json
 ```
 
-命令只读本地 Qdrant/Ollama，policy artifact 写入 Git 忽略的项目 `.cache`。
+命令只接受本机回环地址，只读本地 Qdrant/Ollama。policy artifact 只能写入 Git
+忽略的 `.cache/retrieval-quality/*.json`，使用同目录临时文件原子替换；validation
+回归门禁不通过时不发布产物。
 
 ## 1. 为什么要校准 score
 
@@ -50,71 +53,67 @@ score 排序并聚合相同 score，再把违反单调性的相邻块合并。pr
 dense_weight:     0.5, 1.0, 2.0
 sparse_weight:    0.5, 1.0, 2.0
 candidate_quota:  5, 10, 20
-rerank_enabled:   false, true
 minimum_relevance: 0, 0.25, 0.5
 ```
 
-共 162 组。L37 已证明本地 `qwen:7b` Reranker 的 validation 更差、延迟约 30 秒，
-因此本次 viable grid 排除 `rerank_enabled=true`，实际评估 81 组；选项仍保留在
-schema 和测试中，未来专用 reranker 通过 L37 门禁后可以重新进入。
+共 81 组，全部只依赖 train 数据。Reranker 不在 policy schema 和本节网格中：
+当前 `qwen:7b` 的质量与延迟结论属于 L37 validation 门禁；未来专用 Reranker
+是否启用也应先重跑 L37，而不是让 L38 根据 validation 结果删减训练候选。
 
-真实候选只请求一次并按 case 缓存；不同 quota、threshold 和权重在 Go 中确定性重放，
-避免为 81 组参数重复调用模型。最终产生 396 条按 query kind 聚合的 train outcome。
+Dense 与 Sparse 的真实候选各请求一次并按 case 缓存；不同权重直接融合同一批候选，
+每个 Hybrid case 的测量延迟取两路实测值的较大者。quota、threshold 和权重随后在 Go
+中确定性重放，避免参数组合重复调用模型。最终产生 396 条按 query kind 聚合的 train
+outcome。
 
 每种 query kind 独立排序：
 
 1. train NDCG@10 更高；
 2. train Recall@10 更高；
-3. 操作级 latency tier 更低；
+3. 同一批测量中的 p95 更低；
 4. canonical params JSON；
 5. strategy 名称。
 
 validation outcome 即使写成一个会改变 winner 的“陷阱值”，测试也证明 selection
 完全忽略它。
 
-## 3. 为什么延迟不是直接比较纳秒
+## 3. 怎样直接比较 p95 又保持可重复
 
-第一次真实实现直接用 p95 纳秒做 tie-break。连续运行时质量和候选完全相同，但模型
-warm/cold 与调度抖动让 semantic 权重在 `0.5/2`、`1/2` 之间变化，policy checksum
-不稳定。
+首版为每个 Hybrid 权重重新请求模型，warm/cold 与调度差异会把“权重差异”和“本次
+请求快慢”混在一起。粗粒度 latency tier 虽能隐藏抖动，却违反“质量相同时选择真实
+较低 p95”的规则。
 
-第一轮修正使用 25ms/250ms 等细等级，真实运行仍会跨越 25ms 边界。最终规则改为操作
-级延迟：
+修正后，每个 case 只测一次 Dense 与一次 Sparse。所有权重共享这两路候选和耗时，
+Hybrid 延迟固定为 `max(dense_duration, sparse_duration)`；因此权重只改变 RRF 排名，
+不再凭重复请求的偶然快慢获胜。选择器直接比较同批 train p95，validation 继续用
+`p95 <= Dense baseline * 3` 检查实际退化。
 
-```text
-<= 5s   本地检索级
-<= 60s  慢服务级
-> 60s   超慢级
-```
-
-它能区分本课约百毫秒的检索和 L37 约 30 秒的通用模型 reranker，同时不会把本地热缓存
-状态写进版本化 policy。精确性能退化仍由 validation 的 `p95 <= Dense baseline * 3`
-回归门禁检查。
-
-最终连续两次运行得到完全相同的：
+审查修复后的真实运行得到：
 
 ```text
-policy_checksum=737d487569d553249941f979450f9751fae34715fa393cc1543b7ba116d30310
+policy_checksum=8ce7c0df4fe5bbab63cbf847cf8e486da17b4f8f156aa49574ec6ecb77dd2e03
 ```
 
-测量延迟可以变化，策略身份不能变化。
+连续四次真实运行得到相同路由和 checksum；测量延迟可以变化，策略身份保持不变。
 
 ## 4. 最终路由
 
 train-only 选择结果：
 
-| Query kind | Strategy | Dense/Sparse weight | Quota | Min relevance | Rerank |
-| --- | --- | --- | ---: | ---: | --- |
-| code | Dense | 1 / 1 | 10 | 0.25 | false |
-| exact | Hybrid | 0.5 / 0.5 | 10 | 0.25 | false |
-| mixed | Hybrid | 0.5 / 0.5 | 10 | 0.25 | false |
-| semantic | Hybrid | 0.5 / 0.5 | 10 | 0 | false |
-| unknown | Hybrid fallback | 1 / 1 | 10 | 0 | false |
+| Query kind | Strategy | Dense/Sparse weight | Quota | Min relevance |
+| --- | --- | --- | ---: | ---: |
+| code | Dense | 1 / 1 | 10 | 0.25 |
+| exact | Sparse | 1 / 1 | 10 | 0.25 |
+| mixed | Sparse | 1 / 1 | 10 | 0.25 |
+| semantic | Hybrid | 0.5 / 0.5 | 10 | 0 |
+| unknown | Hybrid fallback | 1 / 1 | 10 | 0 |
 
 `0.5/0.5` 与 `1/1` 的 RRF 相对权重相同；前者由 canonical tie-break 选中，不代表质量
 神奇提升。
 
-运行时输出 calibrated relevance 和 decision reason。选中策略发生基础设施错误时：
+Policy 运行时根据 artifact 自己创建对应权重的 Hybrid，不依赖命令外预先拼好的路由。
+artifact 缺失时明确 warning 并使用等权 RRF；artifact 存在但 checksum、dataset 或
+encoder identity 不匹配时硬失败。运行时输出 calibrated relevance 和 decision
+reason。选中策略发生基础设施错误时：
 
 ```text
 Sparse -> Hybrid -> Dense
@@ -137,8 +136,8 @@ train 拟合，validation 只评估：
 
 | Report | Recall@10 | MRR@10 | NDCG@10 | Negative pass | p95 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Dense validation | 1 | 1 | 1 | 0 | 113.665 ms |
-| Policy validation | 1 | 1 | 1 | 0 | 111.473 ms |
+| Dense validation | 1 | 1 | 1 | 0 | 114.850 ms |
+| Policy validation | 1 | 1 | 1 | 0 | 114.850 ms |
 
 Policy 同时满足：
 

@@ -105,11 +105,12 @@ forbidden hit=0。这不代表生产数据已经泛化，也不代表用户已�
 - Qdrant named Dense/Sparse、字段感知 BM25 和强制 scope filter。
 - 只消费 rank 的 weighted RRF 与逐候选 trace。
 - 本地 `qwen:7b` Reranker 严格协议、JSON Schema、deterministic diversity 和 fallback。
-- train-only PAVA calibration、81 组 viable grid、按 kind 路由和六类 validation 门禁。
+- train-only PAVA calibration、81 组纯检索 grid、按 kind 路由和六类 validation 门禁。
 - policy 绑定 dataset/encoder identity，连续真实运行 checksum 一致。
 
 阶段结论不是“所有新组件都默认开启”：L37 Reranker 质量下降且约 30 秒，已明确默认
-关闭；L38 policy validation Recall/MRR/NDCG=1、scope isolation=1、forbidden=0，
+关闭，是否启用 Reranker 只由 L37 的独立门禁负责，不进入 L38 的训练网格；
+L38 policy validation Recall/MRR/NDCG=1、scope isolation=1、forbidden=0，
 但 negative pass 仍为 0。实现完成不代表用户已经逐节学会。
 
 ## 4. 下一次教学

@@ -22,7 +22,6 @@ type PolicyParams struct {
 	DenseWeight      float64 `json:"dense_weight"`
 	SparseWeight     float64 `json:"sparse_weight"`
 	CandidateQuota   int     `json:"candidate_quota"`
-	RerankEnabled    bool    `json:"rerank_enabled"`
 	MinimumRelevance float64 `json:"minimum_relevance"`
 }
 
@@ -64,20 +63,16 @@ type Policy struct {
 func DefaultPolicyGrid() []PolicyParams {
 	weights := []float64{0.5, 1, 2}
 	quotas := []int{5, 10, 20}
-	rerank := []bool{false, true}
 	thresholds := []float64{0, 0.25, 0.5}
-	result := make([]PolicyParams, 0, len(weights)*len(weights)*len(quotas)*len(rerank)*len(thresholds))
+	result := make([]PolicyParams, 0, len(weights)*len(weights)*len(quotas)*len(thresholds))
 	for _, denseWeight := range weights {
 		for _, sparseWeight := range weights {
 			for _, quota := range quotas {
-				for _, rerankEnabled := range rerank {
-					for _, threshold := range thresholds {
-						result = append(result, PolicyParams{
-							DenseWeight: denseWeight, SparseWeight: sparseWeight,
-							CandidateQuota: quota, RerankEnabled: rerankEnabled,
-							MinimumRelevance: threshold,
-						})
-					}
+				for _, threshold := range thresholds {
+					result = append(result, PolicyParams{
+						DenseWeight: denseWeight, SparseWeight: sparseWeight,
+						CandidateQuota: quota, MinimumRelevance: threshold,
+					})
 				}
 			}
 		}
@@ -158,14 +153,14 @@ func SelectPolicy(dataset Dataset, outcomes []Outcome, grid []PolicyParams) (Pol
 		winner := candidates[0]
 		routes[kind] = PolicyRoute{
 			Strategy: winner.Strategy, Params: winner.Params,
-			Reason: "selected_on_train_ndcg_recall_latency_tier_canonical_params",
+			Reason: "selected_on_train_ndcg_recall_latency_canonical_params",
 		}
 	}
 	unknown := PolicyRoute{
 		Strategy: StrategyHybrid,
 		Params: PolicyParams{
 			DenseWeight: 1, SparseWeight: 1, CandidateQuota: 10,
-			RerankEnabled: false, MinimumRelevance: 0,
+			MinimumRelevance: 0,
 		},
 		Reason: "unknown_equal_weight_rrf",
 	}
@@ -220,8 +215,8 @@ func betterOutcome(left, right Outcome) bool {
 		return left.NDCGAt10 > right.NDCGAt10
 	case left.RecallAt10 != right.RecallAt10:
 		return left.RecallAt10 > right.RecallAt10
-	case policyLatencyTier(left.LatencyP95) != policyLatencyTier(right.LatencyP95):
-		return policyLatencyTier(left.LatencyP95) < policyLatencyTier(right.LatencyP95)
+	case left.LatencyP95 != right.LatencyP95:
+		return left.LatencyP95 < right.LatencyP95
 	}
 	leftParams, _ := canonicalParams(left.Params)
 	rightParams, _ := canonicalParams(right.Params)
@@ -229,17 +224,6 @@ func betterOutcome(left, right Outcome) bool {
 		return leftParams < rightParams
 	}
 	return left.Strategy < right.Strategy
-}
-
-func policyLatencyTier(latency time.Duration) int {
-	switch {
-	case latency <= 5*time.Second:
-		return 0
-	case latency <= 60*time.Second:
-		return 1
-	default:
-		return 2
-	}
 }
 
 func canonicalParams(params PolicyParams) (string, error) {

@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -37,6 +39,12 @@ func loadCommandResources(configPath, datasetPath string) (commandResources, err
 	if err != nil {
 		return commandResources{}, err
 	}
+	if err := validateLocalHTTPURL("QDRANT_BASE_URL", qdrantURL); err != nil {
+		return commandResources{}, err
+	}
+	if err := validateLocalHTTPURL("OLLAMA_BASE_URL", ollamaURL); err != nil {
+		return commandResources{}, err
+	}
 	model, err := required("OLLAMA_EMBED_MODEL")
 	if err != nil {
 		return commandResources{}, err
@@ -65,6 +73,20 @@ func loadCommandResources(configPath, datasetPath string) (commandResources, err
 		Dataset: dataset, QdrantURL: qdrantURL, OllamaURL: ollamaURL,
 		EmbedModel: model, Tokenizer: tokenizer, EncoderID: identity,
 	}, nil
+}
+
+func validateLocalHTTPURL(name, raw string) error {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") ||
+		parsed.Hostname() == "" {
+		return fmt.Errorf("%s must be a valid HTTP(S) URL", name)
+	}
+	host := parsed.Hostname()
+	ip := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (ip == nil || !ip.IsLoopback()) {
+		return fmt.Errorf("%s must point to this machine", name)
+	}
+	return nil
 }
 
 func tokenizerIdentity(path string) (string, error) {

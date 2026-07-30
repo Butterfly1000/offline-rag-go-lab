@@ -247,10 +247,10 @@ func stageForStrategy(name string) FailureStage {
 	switch {
 	case strings.Contains(name, "sparse"):
 		return FailureSparseRecall
-	case strings.Contains(name, "hybrid"), strings.Contains(name, "rrf"):
-		return FailureFusion
 	case strings.Contains(name, "rerank"):
 		return FailureRerank
+	case strings.Contains(name, "hybrid"), strings.Contains(name, "rrf"):
+		return FailureFusion
 	case strings.Contains(name, "policy"):
 		return FailurePolicy
 	default:

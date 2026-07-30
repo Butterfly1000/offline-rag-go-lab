@@ -64,14 +64,29 @@ func TestCachedConfiguredStrategyAppliesQuotaAndCalibratedThreshold(t *testing.T
 	}
 }
 
-func TestEvaluatedPolicyGridIsRerankDisabledHalfOfCheckedInGrid(t *testing.T) {
-	grid := evaluatedPolicyGrid()
-	if len(retrievalquality.DefaultPolicyGrid()) != 162 || len(grid) != 81 {
-		t.Fatalf("full=%d evaluated=%d", len(retrievalquality.DefaultPolicyGrid()), len(grid))
+func TestPolicyGridIsTrainOnlyRetrievalGrid(t *testing.T) {
+	if got := len(retrievalquality.DefaultPolicyGrid()); got != 81 {
+		t.Fatalf("grid=%d, want 81 retrieval-only combinations", got)
 	}
-	for _, params := range grid {
-		if params.RerankEnabled {
-			t.Fatalf("L37 default-disabled reranker leaked into viable grid: %+v", params)
+}
+
+func TestPolicyArtifactPathIsRestrictedToIgnoredDirectory(t *testing.T) {
+	for _, path := range []string{
+		".cache/retrieval-quality/policy-v1.json",
+		".cache/retrieval-quality/nested/policy.json",
+	} {
+		if _, err := validatePolicyArtifactPath(path); err != nil {
+			t.Fatalf("valid path %q: %v", path, err)
+		}
+	}
+	for _, path := range []string{
+		"docs/teaching/policy.json",
+		".cache/retrieval-quality/../../go.mod",
+		"/tmp/policy.json",
+		".cache/retrieval-quality/policy.txt",
+	} {
+		if _, err := validatePolicyArtifactPath(path); err == nil {
+			t.Fatalf("unsafe path %q must fail", path)
 		}
 	}
 }

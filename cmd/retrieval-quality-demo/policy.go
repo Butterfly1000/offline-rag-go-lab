@@ -34,7 +34,7 @@ type policyCommandReport struct {
 	FullGridCount        int                                                        `json:"full_grid_count"`
 	EvaluatedGridCount   int                                                        `json:"evaluated_grid_count"`
 	TrainingOutcomeCount int                                                        `json:"training_outcome_count"`
-	RerankerExcluded     string                                                     `json:"reranker_excluded_reason"`
+	RerankerBoundary     string                                                     `json:"reranker_boundary"`
 	Calibration          map[retrievalquality.StrategyName]calibrationCommandReport `json:"calibration"`
 	Policy               retrievalquality.Policy                                    `json:"policy"`
 	DenseValidation      retrievalquality.Report                                    `json:"dense_validation"`
@@ -96,24 +96,6 @@ func (s cachedConfiguredStrategy) Search(
 	}
 	result.Warnings = append([]string(nil), result.Warnings...)
 	return result, nil
-}
-
-type kindRoutedStrategy struct {
-	name       string
-	byKind     map[retrievalquality.QueryKind]retrievalquality.Strategy
-	defaultOne retrievalquality.Strategy
-}
-
-func (s kindRoutedStrategy) Name() string { return s.name }
-
-func (s kindRoutedStrategy) Search(
-	ctx context.Context,
-	query retrievalquality.Query,
-) (retrievalquality.SearchResult, error) {
-	if strategy := s.byKind[query.Kind]; strategy != nil {
-		return strategy.Search(ctx, query)
-	}
-	return s.defaultOne.Search(ctx, query)
 }
 
 func runPolicy(ctx context.Context, args []string, output io.Writer) error {
@@ -208,22 +190,16 @@ func buildPolicyCommandReport(
 	}
 
 	type hybridCache struct {
-		strategy   retrievalquality.Strategy
 		train      map[string]retrievalquality.SearchResult
 		calibrator retrievalquality.Calibrator
 	}
 	hybrids := map[string]hybridCache{}
 	for _, denseWeight := range []float64{0.5, 1, 2} {
 		for _, sparseWeight := range []float64{0.5, 1, 2} {
-			hybrid, err := retrievalquality.NewHybridStrategy(
-				dense, sparse,
+			trainCache, err := fusePolicyCaches(
+				denseTrain, sparseTrain,
 				retrievalquality.FusionWeights{Dense: denseWeight, Sparse: sparseWeight},
-				retrievalquality.HybridEvaluation,
 			)
-			if err != nil {
-				return policyCommandReport{}, err
-			}
-			trainCache, err := cachePolicySplit(ctx, dataset, retrievalquality.SplitTrain, hybrid, 20)
 			if err != nil {
 				return policyCommandReport{}, err
 			}
@@ -239,13 +215,13 @@ func buildPolicyCommandReport(
 				return policyCommandReport{}, err
 			}
 			hybrids[policyWeightsKey(denseWeight, sparseWeight)] = hybridCache{
-				strategy: hybrid, train: trainCache, calibrator: calibrator,
+				train: trainCache, calibrator: calibrator,
 			}
 		}
 	}
 	equalHybrid := hybrids[policyWeightsKey(1, 1)]
-	equalValidation, err := cachePolicySplit(
-		ctx, dataset, retrievalquality.SplitValidation, equalHybrid.strategy, 20,
+	equalValidation, err := fusePolicyCaches(
+		denseValidation, sparseValidation, retrievalquality.FusionWeights{Dense: 1, Sparse: 1},
 	)
 	if err != nil {
 		return policyCommandReport{}, err
@@ -257,7 +233,7 @@ func buildPolicyCommandReport(
 		return policyCommandReport{}, err
 	}
 
-	grid := evaluatedPolicyGrid()
+	grid := retrievalquality.DefaultPolicyGrid()
 	var outcomes []retrievalquality.Outcome
 	for _, params := range grid {
 		hybridCache := hybrids[policyWeightsKey(params.DenseWeight, params.SparseWeight)]
@@ -335,40 +311,17 @@ func buildPolicyCommandReport(
 		return policyCommandReport{}, err
 	}
 
-	selectedHybridValidation := map[string]map[string]retrievalquality.SearchResult{}
-	hybridByKind := map[retrievalquality.QueryKind]retrievalquality.Strategy{}
-	for kind, route := range policy.Routes {
-		if route.Strategy != retrievalquality.StrategyHybrid {
-			continue
-		}
-		key := policyWeightsKey(route.Params.DenseWeight, route.Params.SparseWeight)
-		cache, exists := selectedHybridValidation[key]
-		if !exists {
-			cache, err = cachePolicySplit(
-				ctx, dataset, retrievalquality.SplitValidation, hybrids[key].strategy, 20,
-			)
-			if err != nil {
-				return policyCommandReport{}, err
-			}
-			selectedHybridValidation[key] = cache
-		}
-		hybridByKind[kind] = cachedRawStrategy{name: "selected_hybrid_validation", cache: cache}
-	}
-	validationStrategies := map[retrievalquality.StrategyName]retrievalquality.Strategy{
-		retrievalquality.StrategyDense:  cachedRawStrategy{name: "dense_validation", cache: denseValidation},
-		retrievalquality.StrategySparse: cachedRawStrategy{name: "sparse_validation", cache: sparseValidation},
-		retrievalquality.StrategyHybrid: kindRoutedStrategy{
-			name: "hybrid_validation_router", byKind: hybridByKind,
-			defaultOne: cachedRawStrategy{name: "equal_hybrid_validation", cache: equalValidation},
-		},
-	}
-	policyStrategy, err := retrievalquality.NewPolicyStrategy(policy, validationStrategies)
+	denseValidationStrategy := cachedRawStrategy{name: "dense_validation", cache: denseValidation}
+	sparseValidationStrategy := cachedRawStrategy{name: "sparse_validation", cache: sparseValidation}
+	policyStrategy, err := retrievalquality.NewPolicyStrategy(
+		policy, denseValidationStrategy, sparseValidationStrategy,
+	)
 	if err != nil {
 		return policyCommandReport{}, err
 	}
 	denseValidationReport, err := retrievalquality.Evaluate(
 		ctx, dataset, retrievalquality.SplitValidation,
-		validationStrategies[retrievalquality.StrategyDense], 10,
+		denseValidationStrategy, 10,
 	)
 	if err != nil {
 		return policyCommandReport{}, err
@@ -380,14 +333,18 @@ func buildPolicyCommandReport(
 		return policyCommandReport{}, err
 	}
 	regression := retrievalquality.CheckRegression(denseValidationReport, policyValidationReport, 3)
-	if err := writePolicyArtifact(artifactPath, policy); err != nil {
-		return policyCommandReport{}, err
+	publishedPath := ""
+	if regression.Passed {
+		if err := writePolicyArtifact(artifactPath, policy); err != nil {
+			return policyCommandReport{}, err
+		}
+		publishedPath = artifactPath
 	}
 	return policyCommandReport{
 		EncoderIdentity:    identity,
 		FullGridCount:      len(retrievalquality.DefaultPolicyGrid()),
 		EvaluatedGridCount: len(grid), TrainingOutcomeCount: len(outcomes),
-		RerankerExcluded: "L37 validation default_enabled=false; rerank=true remains checked in but is not viable",
+		RerankerBoundary: "L37 owns the optional reranker gate; L38 selects retrieval-only routes on train",
 		Calibration: map[retrievalquality.StrategyName]calibrationCommandReport{
 			retrievalquality.StrategyDense:  denseCalibration,
 			retrievalquality.StrategySparse: sparseCalibration,
@@ -395,19 +352,8 @@ func buildPolicyCommandReport(
 		},
 		Policy: policy, DenseValidation: denseValidationReport,
 		PolicyValidation: policyValidationReport, Regression: regression,
-		ArtifactPath: artifactPath, Passed: regression.Passed,
+		ArtifactPath: publishedPath, Passed: regression.Passed,
 	}, nil
-}
-
-func evaluatedPolicyGrid() []retrievalquality.PolicyParams {
-	full := retrievalquality.DefaultPolicyGrid()
-	result := make([]retrievalquality.PolicyParams, 0, len(full)/2)
-	for _, params := range full {
-		if !params.RerankEnabled {
-			result = append(result, params)
-		}
-	}
-	return result
 }
 
 func outcomesFromTrainReport(
@@ -535,10 +481,45 @@ func cloneCommandCandidates(input []retrievalquality.Candidate) []retrievalquali
 	return result
 }
 
+func fusePolicyCaches(
+	dense, sparse map[string]retrievalquality.SearchResult,
+	weights retrievalquality.FusionWeights,
+) (map[string]retrievalquality.SearchResult, error) {
+	if len(dense) == 0 || len(sparse) == 0 {
+		return nil, fmt.Errorf("dense and sparse policy caches are required")
+	}
+	result := make(map[string]retrievalquality.SearchResult, len(dense))
+	for caseID, denseResult := range dense {
+		sparseResult, exists := sparse[caseID]
+		if !exists {
+			return nil, fmt.Errorf("sparse policy cache is missing case %q", caseID)
+		}
+		fused, err := retrievalquality.FuseRRF(
+			denseResult.Candidates, sparseResult.Candidates, weights, 60,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("fuse policy cache case %q: %w", caseID, err)
+		}
+		duration := denseResult.Duration
+		if sparseResult.Duration > duration {
+			duration = sparseResult.Duration
+		}
+		warnings := append([]string(nil), denseResult.Warnings...)
+		warnings = append(warnings, sparseResult.Warnings...)
+		result[caseID] = retrievalquality.SearchResult{
+			Candidates: fused, Duration: duration, Warnings: warnings,
+		}
+	}
+	if len(result) != len(sparse) {
+		return nil, fmt.Errorf("dense and sparse policy caches have different case sets")
+	}
+	return result, nil
+}
+
 func writePolicyArtifact(path string, policy retrievalquality.Policy) error {
-	path = filepath.Clean(path)
-	if path == "." || filepath.IsAbs(path) {
-		return fmt.Errorf("policy artifact must be a project-relative file")
+	path, err := validatePolicyArtifactPath(path)
+	if err != nil {
+		return err
 	}
 	content, err := json.MarshalIndent(policy, "", "  ")
 	if err != nil {
@@ -548,8 +529,43 @@ func writePolicyArtifact(path string, policy retrievalquality.Policy) error {
 		return fmt.Errorf("create policy artifact directory: %w", err)
 	}
 	content = append(content, '\n')
-	if err := os.WriteFile(path, content, 0o644); err != nil {
-		return fmt.Errorf("write policy artifact: %w", err)
+	temp, err := os.CreateTemp(filepath.Dir(path), ".policy-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temporary policy artifact: %w", err)
+	}
+	tempPath := temp.Name()
+	defer os.Remove(tempPath)
+	if err := temp.Chmod(0o644); err != nil {
+		temp.Close()
+		return fmt.Errorf("set temporary policy permissions: %w", err)
+	}
+	if _, err := temp.Write(content); err != nil {
+		temp.Close()
+		return fmt.Errorf("write temporary policy artifact: %w", err)
+	}
+	if err := temp.Sync(); err != nil {
+		temp.Close()
+		return fmt.Errorf("sync temporary policy artifact: %w", err)
+	}
+	if err := temp.Close(); err != nil {
+		return fmt.Errorf("close temporary policy artifact: %w", err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return fmt.Errorf("publish policy artifact: %w", err)
 	}
 	return nil
+}
+
+func validatePolicyArtifactPath(path string) (string, error) {
+	path = filepath.Clean(path)
+	allowed := filepath.Clean(".cache/retrieval-quality")
+	if path == "." || filepath.IsAbs(path) || filepath.Ext(path) != ".json" {
+		return "", fmt.Errorf("policy artifact must be a JSON file under %s", allowed)
+	}
+	relative, err := filepath.Rel(allowed, path)
+	if err != nil || relative == "." || relative == ".." ||
+		len(relative) >= 3 && relative[:3] == ".."+string(filepath.Separator) {
+		return "", fmt.Errorf("policy artifact must be a JSON file under %s", allowed)
+	}
+	return path, nil
 }

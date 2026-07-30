@@ -90,7 +90,8 @@ func (s *HybridStrategy) Search(ctx context.Context, query Query) (SearchResult,
 		}
 		warnings := append([]string(nil), denseResult.Warnings...)
 		warnings = append(warnings, "sparse infrastructure fallback: "+sparseErr.Error())
-		return SearchResult{Candidates: candidates, Duration: time.Since(started), Warnings: warnings}, nil
+		duration := maxDuration(time.Since(started), denseResult.Duration)
+		return SearchResult{Candidates: candidates, Duration: duration, Warnings: warnings}, nil
 	}
 	fused, err := FuseRRF(denseResult.Candidates, sparseResult.Candidates, s.weights, 60)
 	if err != nil {
@@ -101,5 +102,16 @@ func (s *HybridStrategy) Search(ctx context.Context, query Query) (SearchResult,
 	}
 	warnings := append([]string(nil), denseResult.Warnings...)
 	warnings = append(warnings, sparseResult.Warnings...)
-	return SearchResult{Candidates: fused, Duration: time.Since(started), Warnings: warnings}, nil
+	duration := maxDuration(time.Since(started), denseResult.Duration, sparseResult.Duration)
+	return SearchResult{Candidates: fused, Duration: duration, Warnings: warnings}, nil
+}
+
+func maxDuration(values ...time.Duration) time.Duration {
+	var result time.Duration
+	for _, value := range values {
+		if value > result {
+			result = value
+		}
+	}
+	return result
 }

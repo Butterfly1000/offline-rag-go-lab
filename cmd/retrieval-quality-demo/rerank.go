@@ -84,6 +84,12 @@ func runRerank(ctx context.Context, args []string, output io.Writer) error {
 	if *rerankerURL == "" {
 		*rerankerURL = resources.OllamaURL
 	}
+	if err := validateLocalHTTPURL("reranker URL", *rerankerURL); err != nil {
+		return err
+	}
+	if err := validateLocalHTTPURL("fallback URL", *fallbackURL); err != nil {
+		return err
+	}
 	ollamaReranker, err := retrievalquality.NewOllamaReranker(*rerankerURL, *model)
 	if err != nil {
 		return err

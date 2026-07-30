@@ -107,6 +107,19 @@ func TestDatasetValidateRejectsBrokenContracts(t *testing.T) {
 			want: "both judged and forbidden",
 		},
 		{
+			name: "same scope forbidden",
+			mutate: func(dataset *Dataset) {
+				for _, chunk := range dataset.Corpus {
+					if chunk.KnowledgeScope == dataset.Cases[0].KnowledgeScope &&
+						chunk.ChunkID != dataset.Cases[0].Judgments[0].ChunkID {
+						dataset.Cases[0].ForbiddenChunkIDs[0] = chunk.ChunkID
+						return
+					}
+				}
+			},
+			want: "forbidden chunk must belong to another knowledge_scope",
+		},
+		{
 			name: "invalid relevance",
 			mutate: func(dataset *Dataset) {
 				dataset.Cases[0].Judgments[0].Relevance = 4

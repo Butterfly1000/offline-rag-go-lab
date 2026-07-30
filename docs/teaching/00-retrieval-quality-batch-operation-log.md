@@ -344,33 +344,33 @@ Docker 数据、MySQL 或远端状态。
 - calibrated threshold abstain；
 - infrastructure fallback 与 integrity hard failure；
 - scope、forbidden、negative、Recall、NDCG、3× p95 六类回归门禁；
-- 162/81 完整/可行网格和缓存重放。
+- 81 组纯检索网格和 Dense/Sparse 单批缓存重放。
 
 ### 真实策略选择
 
-完整 grid 162，L37 默认关闭的 rerank=true 排除后评估 81 组，形成 396 条 train
-outcome。validation 在 policy 确定后才运行。
+完整 retrieval grid 为 81 组，形成 396 条 train outcome。Reranker 属于 L37 的独立
+门禁，不在 L38 schema 中；validation 在 policy 确定后才运行。
 
 最终路由：
 
 ```text
-code     -> Dense  weights=1/1   quota=10 threshold=0.25 rerank=false
-exact    -> Hybrid weights=.5/.5 quota=10 threshold=0.25 rerank=false
-mixed    -> Hybrid weights=.5/.5 quota=10 threshold=0.25 rerank=false
-semantic -> Hybrid weights=.5/.5 quota=10 threshold=0    rerank=false
-unknown  -> Hybrid weights=1/1   quota=10 threshold=0    rerank=false
+code     -> Dense  weights=1/1   quota=10 threshold=0.25
+exact    -> Sparse weights=1/1   quota=10 threshold=0.25
+mixed    -> Sparse weights=1/1   quota=10 threshold=0.25
+semantic -> Hybrid weights=.5/.5 quota=10 threshold=0
+unknown  -> Hybrid weights=1/1   quota=10 threshold=0
 ```
 
 ### 确定性缺陷与修复
 
-首版用纳秒 p95 打破质量并列，重复运行的 semantic 权重从 `.5/2` 变成 `1/2`，
-checksum 漂移。25ms/250ms 细等级仍会被模型 warm/cold 跨越。
+首版为每组权重重新请求模型，导致 p95 混入 warm/cold 抖动；后续的粗粒度 latency
+tier 又不能兑现“质量相同选较低 p95”。审查修复后，Dense/Sparse 每个 case 只测一次，
+所有 Hybrid 权重共享候选，延迟取两路实测最大值；选择器直接比较同批 p95。
 
-最终改为操作级 latency tier：`<=5s`、`<=60s`、`>60s`；同等级使用 canonical
-params。精确性能由 validation 3× 门禁负责。修复后连续两次：
+修复后连续四次运行的 routes/checksum 相同：
 
 ```text
-checksum=737d487569d553249941f979450f9751fae34715fa393cc1543b7ba116d30310
+checksum=8ce7c0df4fe5bbab63cbf847cf8e486da17b4f8f156aa49574ec6ecb77dd2e03
 routes/params 完全相同
 ```
 
@@ -379,8 +379,8 @@ routes/params 完全相同
 最后一次运行：
 
 ```text
-Dense validation  Recall@10=1 MRR@10=1 NDCG@10=1 p95=113.665ms
-Policy validation Recall@10=1 MRR@10=1 NDCG@10=1 p95=111.473ms
+Dense validation  Recall@10=1 MRR@10=1 NDCG@10=1 p95=114.850ms
+Policy validation Recall@10=1 MRR@10=1 NDCG@10=1 p95=114.850ms
 negative_pass=0
 scope_isolation=1 forbidden_hits=0
 regression_passed=true failures=[]

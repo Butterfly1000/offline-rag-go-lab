@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,6 +20,7 @@ import (
 const (
 	RetrievalQualityCollection = "offline_rag_retrieval_quality_lab_v1"
 	RetrievalQualityAlias      = "offline_rag_retrieval_quality_lab_active"
+	RetrievalQualityVectorSize = 1024
 	maxQdrantErrorBody         = 2048
 )
 
@@ -72,6 +74,11 @@ func NewQdrant(baseURL, physicalCollection, alias string) (*Qdrant, error) {
 	if baseURL == "" {
 		return nil, fmt.Errorf("Qdrant base URL is required")
 	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") ||
+		parsed.Hostname() == "" || !isLoopbackHost(parsed.Hostname()) {
+		return nil, fmt.Errorf("retrieval-quality Qdrant URL must use HTTP(S) on this machine")
+	}
 	if physicalCollection != RetrievalQualityCollection {
 		return nil, fmt.Errorf("physical collection must be %q", RetrievalQualityCollection)
 	}
@@ -90,8 +97,11 @@ func (q *Qdrant) SetExpectedIdentity(embeddingModel, encoderID string) {
 }
 
 func (q *Qdrant) EnsureCollection(ctx context.Context, vectorSize int) error {
-	if vectorSize <= 0 {
-		return fmt.Errorf("Qdrant dense vector size must be positive")
+	if vectorSize != RetrievalQualityVectorSize {
+		return fmt.Errorf(
+			"Qdrant dense vector size=%d, want contract size %d",
+			vectorSize, RetrievalQualityVectorSize,
+		)
 	}
 	path := q.collectionPath(q.physical)
 	var existing qdrantCollectionResponse
@@ -129,8 +139,11 @@ func (q *Qdrant) Upsert(ctx context.Context, item IndexedChunk) error {
 		chunk.Content == "" || chunk.ContentHash != sha256Hex([]byte(chunk.Content)) {
 		return fmt.Errorf("indexed chunk identity, content, or content_hash is invalid")
 	}
-	if len(item.Dense) == 0 {
-		return fmt.Errorf("indexed dense vector is required")
+	if len(item.Dense) != RetrievalQualityVectorSize {
+		return fmt.Errorf(
+			"indexed dense vector size=%d, want %d",
+			len(item.Dense), RetrievalQualityVectorSize,
+		)
 	}
 	for index, value := range item.Dense {
 		if math.IsNaN(float64(value)) || math.IsInf(float64(value), 0) {
@@ -166,8 +179,11 @@ func (q *Qdrant) Upsert(ctx context.Context, item IndexedChunk) error {
 }
 
 func (q *Qdrant) QueryDense(ctx context.Context, scope string, vector []float32, limit int) ([]Candidate, error) {
-	if len(vector) == 0 {
-		return nil, fmt.Errorf("dense query vector is required")
+	if len(vector) != RetrievalQualityVectorSize {
+		return nil, fmt.Errorf(
+			"dense query vector size=%d, want %d",
+			len(vector), RetrievalQualityVectorSize,
+		)
 	}
 	for index, value := range vector {
 		if math.IsNaN(float64(value)) || math.IsInf(float64(value), 0) {
@@ -175,6 +191,14 @@ func (q *Qdrant) QueryDense(ctx context.Context, scope string, vector []float32,
 		}
 	}
 	return q.query(ctx, scope, "dense", append([]float32(nil), vector...), limit)
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(strings.TrimSpace(host), "localhost") {
+		return true
+	}
+	ip := net.ParseIP(strings.TrimSpace(host))
+	return ip != nil && ip.IsLoopback()
 }
 
 func (q *Qdrant) QuerySparse(ctx context.Context, scope string, vector SparseVector, limit int) ([]Candidate, error) {

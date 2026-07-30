@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type recordingStrategy struct {
@@ -14,6 +15,30 @@ type recordingStrategy struct {
 	err    error
 	mu     sync.Mutex
 	query  Query
+}
+
+func TestHybridPreservesMeasuredLegLatencyForCachedEvaluation(t *testing.T) {
+	dense := &recordingStrategy{name: "dense", result: SearchResult{
+		Candidates: []Candidate{{KnowledgeScope: "scope-a", ChunkID: "a"}},
+		Duration:   120 * time.Millisecond,
+	}}
+	sparse := &recordingStrategy{name: "sparse", result: SearchResult{
+		Candidates: []Candidate{{KnowledgeScope: "scope-a", ChunkID: "b"}},
+		Duration:   20 * time.Millisecond,
+	}}
+	hybrid, err := NewHybridStrategy(dense, sparse, FusionWeights{Dense: 1, Sparse: 1}, HybridEvaluation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := hybrid.Search(context.Background(), Query{
+		Text: "query", KnowledgeScope: "scope-a", Limit: 10,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Duration < 120*time.Millisecond {
+		t.Fatalf("duration=%s, want at least slowest measured leg", result.Duration)
+	}
 }
 
 func (s *recordingStrategy) Name() string { return s.name }
