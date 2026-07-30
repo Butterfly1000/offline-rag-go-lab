@@ -258,3 +258,67 @@ RRF=0.03278689。
 
 等权 Hybrid 在 validation 与 Dense 持平，在 train 略低，当前证据不足以声称默认
 优于 Dense。L37 只实现可插拔 Reranker；是否默认启用仍由 validation 结果决定。
+
+## 第 37 节：Local Reranker and Diversity
+
+### 影响分析
+
+本节只读取 `offline_rag_retrieval_quality_lab_active`，调用本地 `bge-m3` 和
+`qwen:7b`。没有 Qdrant 写入、collection/alias 变更、Docker 数据变更、MySQL 或
+远端操作。
+
+### RED / GREEN 证据
+
+领域、HTTP、策略和命令报告依次通过 RED：
+
+```text
+RerankScore / ApplyReranker / ApplyDiversity missing
+NewRerankedStrategy missing
+buildRerankReport / sameCandidateOrder missing
+```
+
+实现后聚焦测试全部 GREEN，覆盖：
+
+- exact ID coverage、unknown/missing/duplicate/non-finite
+- `temperature=0`、untrusted candidate prompt、strict response decode
+- backend/protocol failure 保留原 RRF
+- document≤3、heading≤2、稳定顺序和不修改输入
+- scope/ownership hard failure
+- validation-only 报告与“未严格提升就不默认启用”
+
+### 首次真实失败与根因
+
+首轮 16/16 回退：15 次返回合法 JSON 但字段为 `candidate_ id`，一次漏掉 11 个
+候选。forced fallback 顺序正确，但真实 reranker 使用次数为 0，所以命令按执行门禁
+失败。
+
+系统化定位确认请求只有通用 `"format":"json"`，无法约束业务字段。新增 RED 测试后，
+把 format 改为动态 JSON Schema：候选数固定、`candidate_id` 枚举固定、未知字段
+禁止、relevance 为 number。两候选本地最小实验通过后才重跑整批。
+
+### 最终真实运行
+
+```text
+Hybrid validation:
+Recall@10=1 NDCG@10=1 p50=105.242ms p95=2.339s
+
+Rerank + diversity validation:
+Recall@3=0.833333 Recall@10=0.916667
+MRR@10=0.808333 NDCG@10=0.834815
+p50=28.665s p95=34.156s
+
+calls=16 used=11 fallbacks=5 input_candidates=192
+diversity_skipped=0 reranker_p50=26.948s reranker_p95=31.894s
+scope_isolation=1 forbidden_hits=0
+forced_fallback_same_rrf_order=true
+default_enabled=false
+```
+
+剩余 5 次协议回退都是 duplicate candidate ID。JSON Schema 保证结构和枚举，但不能
+保证 enum 数组不重复；Go 的 exact coverage 校验正确拦截并保留原 RRF。
+
+### 当前边界
+
+`qwen:7b` 是通用生成模型，不是专用 cross-encoder。本次 validation 质量下降且延迟
+显著增加，因此只保留可替换实现与安全回退，默认策略关闭 Reranker。L38 将只用 train
+选择策略，validation 仅做最终回归门禁。

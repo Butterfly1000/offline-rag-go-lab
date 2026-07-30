@@ -24,6 +24,8 @@ func main() {
 		err = runSparse(ctx, os.Args[2:], os.Stdout)
 	case "hybrid":
 		err = runHybrid(ctx, os.Args[2:], os.Stdout)
+	case "rerank":
+		err = runRerank(ctx, os.Args[2:], os.Stdout)
 	default:
 		err = fmt.Errorf("unknown subcommand %q", os.Args[1])
 	}
