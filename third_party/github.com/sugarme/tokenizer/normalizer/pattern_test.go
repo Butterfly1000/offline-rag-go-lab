@@ -228,3 +228,14 @@ func TestRegexp(t *testing.T) {
 	}
 	doTest(t, p, inside, want)
 }
+
+func TestRegexpNegativeLookaheadDoesNotPanic(t *testing.T) {
+	// Qwen2 tokenizer.json uses a GPT-2 style pre-tokenizer pattern with (?!).
+	// Go's RE2 rejects this syntax; NewRegexpPattern must fall back to regexp2.
+	p := normalizer.NewRegexpPattern(`\s+(?!\S)|\s+`)
+	inside := "a  b "
+	got := p.FindMatches(inside)
+	if len(got) == 0 {
+		t.Fatal("expected matches for lookahead pattern")
+	}
+}

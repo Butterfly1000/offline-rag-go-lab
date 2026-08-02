@@ -194,14 +194,37 @@ type RegexpPattern struct {
 func NewRegexpPattern(s string) *RegexpPattern {
 	pattern := &RegexpPattern{}
 
-	// Some HF tokenizers use backreferences like \1, which Go regexp does not support.
-	if strings.Contains(s, `\1`) || strings.Contains(s, `\2`) || strings.Contains(s, `\3`) {
+	// Go's RE2 engine rejects common HuggingFace tokenizer features such as
+	// backreferences (\1) and lookarounds (?! / ?= / ?<! / ?<=). Prefer RE2
+	// when possible, then fall back to regexp2 for those patterns.
+	if needsRegexp2(s) {
 		pattern.re2 = regexp2.MustCompile(s, 0)
 		return pattern
 	}
 
-	pattern.re = regexp.MustCompile(s)
+	re, err := regexp.Compile(s)
+	if err != nil {
+		pattern.re2 = regexp2.MustCompile(s, 0)
+		return pattern
+	}
+
+	pattern.re = re
 	return pattern
+}
+
+func needsRegexp2(s string) bool {
+	switch {
+	case strings.Contains(s, `\1`),
+		strings.Contains(s, `\2`),
+		strings.Contains(s, `\3`),
+		strings.Contains(s, `(?!`),
+		strings.Contains(s, `(?=`),
+		strings.Contains(s, `(?<!`),
+		strings.Contains(s, `(?<=`):
+		return true
+	default:
+		return false
+	}
 }
 
 func findMatchesRegexp2(re *regexp2.Regexp, inside string) []OffsetsMatch {
