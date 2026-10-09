@@ -3,13 +3,34 @@ package tokenizerdemo
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/sugarme/tokenizer"
 	"github.com/sugarme/tokenizer/model/wordlevel"
 )
 
-const qwenTokenizerSHA256 = "f7c9b2dba4a296b1aa76c16a34b8225c0c118978400d4bb66bff0902d702f5b8"
+type qwenTokenizerGolden struct {
+	sha256        string
+	longTextCount int
+	singleWoID    int
+	separatedIDs  []int
+}
+
+var qwenTokenizerGoldens = map[string]qwenTokenizerGolden{
+	"f7c9b2dba4a296b1aa76c16a34b8225c0c118978400d4bb66bff0902d702f5b8": {
+		sha256:        "f7c9b2dba4a296b1aa76c16a34b8225c0c118978400d4bb66bff0902d702f5b8",
+		longTextCount: 31,
+		singleWoID:    35946,
+		separatedIDs:  []int{35946, 64, 38342},
+	},
+	"b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8": {
+		sha256:        "b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8",
+		longTextCount: 41,
+		singleWoID:    56023,
+		separatedIDs:  []int{56023, 87, 73306},
+	},
+}
 
 func TestLoadCounterFailsWhenTokenizerFileDoesNotExist(t *testing.T) {
 	missingPath := filepath.Join(t.TempDir(), "tokenizer.json")
@@ -46,7 +67,7 @@ func TestCounterUsesLoadedTokenizerToCountText(t *testing.T) {
 }
 
 func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
-	assertQwenTokenizerAsset(t)
+	golden := assertKnownQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
@@ -56,13 +77,13 @@ func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 31 || len(tokens) != count || len(ids) != count {
-		t.Fatalf("CountText() count=%d tokens=%d ids=%d, want 31", count, len(tokens), len(ids))
+	if count != golden.longTextCount || len(tokens) != count || len(ids) != count {
+		t.Fatalf("CountText() count=%d tokens=%d ids=%d, want %d for tokenizer %s", count, len(tokens), len(ids), golden.longTextCount, golden.sha256)
 	}
 }
 
 func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
-	assertQwenTokenizerAsset(t)
+	golden := assertKnownQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
@@ -79,8 +100,8 @@ func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
 		id, found := counter.tokenizer.TokenToId("我")
 		t.Fatalf("CountText(我) count=%d tokens=%v ids=%v raw=%v token_id=%d found=%t, want one added token", count, tokens, ids, raw.Tokens, id, found)
 	}
-	if ids[0] != 35946 {
-		t.Fatalf("CountText(我) ids=%v, want [35946]", ids)
+	if ids[0] != golden.singleWoID {
+		t.Fatalf("CountText(我) ids=%v, want [%d] for tokenizer %s", ids, golden.singleWoID, golden.sha256)
 	}
 }
 
@@ -105,7 +126,7 @@ func TestAddedVocabularySelectsLeftmostLongestMatches(t *testing.T) {
 }
 
 func TestQwenCounterKeepsSeparatedChineseTokens(t *testing.T) {
-	assertQwenTokenizerAsset(t)
+	golden := assertKnownQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
@@ -117,11 +138,8 @@ func TestQwenCounterKeepsSeparatedChineseTokens(t *testing.T) {
 	if count != 3 || len(tokens) != 3 || len(ids) != 3 {
 		t.Fatalf("CountText(我a未) count=%d tokens=%d ids=%d, want three tokens", count, len(tokens), len(ids))
 	}
-	wantIDs := []int{35946, 64, 38342}
-	for index, want := range wantIDs {
-		if ids[index] != want {
-			t.Fatalf("CountText(我a未) ids=%v, want %v", ids, wantIDs)
-		}
+	if !reflect.DeepEqual(ids, golden.separatedIDs) {
+		t.Fatalf("CountText(我a未) ids=%v, want %v for tokenizer %s", ids, golden.separatedIDs, golden.sha256)
 	}
 }
 
@@ -132,14 +150,16 @@ func qwenTokenizerTestPath() string {
 	return filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json")
 }
 
-func assertQwenTokenizerAsset(t *testing.T) {
+func assertKnownQwenTokenizerAsset(t *testing.T) qwenTokenizerGolden {
 	t.Helper()
 
 	summary, err := InspectFile(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := VerifySHA256(summary.SHA256, qwenTokenizerSHA256); err != nil {
-		t.Fatalf("%v; token-count golden values are tied to this exact tokenizer asset", err)
+	golden, ok := qwenTokenizerGoldens[summary.SHA256]
+	if !ok {
+		t.Fatalf("unknown tokenizer SHA256 %s; token-count golden values must be reviewed before accepting a new tokenizer asset", summary.SHA256)
 	}
+	return golden
 }
