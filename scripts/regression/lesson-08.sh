@@ -41,11 +41,11 @@ go test ./internal/tokenizerdemo ./internal/chatprompt
 pass "Tokenizer and Qwen message-format tests"
 
 tokenizer_output=$(go run ./cmd/tokenizer-demo --tokenizer "$QWEN_TOKENIZER_PATH" --text '我叫小黄，这个项目是 Go 写的。')
-printf '%s\n' "$tokenizer_output" | grep -F 'Token count: 15' >/dev/null || {
+printf '%s\n' "$tokenizer_output" | grep -F 'Token count: 13' >/dev/null || {
 	printf '%s\n' "$tokenizer_output" >&2
-	fail "Chinese golden text did not produce 15 tokens"
+	fail "Chinese golden text did not produce 13 tokens"
 }
-pass "Chinese golden token count is 15"
+pass "Chinese golden token count is 13"
 
 message_output=$(go run ./cmd/message-format-demo --role user --content '你好，解释 token。')
 printf '%s\n' "$message_output" | grep -F '<|im_start|>user' >/dev/null || fail "formatted user boundary is missing"
@@ -53,6 +53,7 @@ printf '%s\n' "$message_output" | grep -F '你好，解释 token。<|im_end|>' >
 pass "valid Qwen message boundaries"
 
 invalid_output_file="$repo_root/.cache/lesson-08-invalid-role.txt"
+mkdir -p "$(dirname -- "$invalid_output_file")"
 trap 'rm -f "$invalid_output_file"' EXIT HUP INT TERM
 if go run ./cmd/message-format-demo --role unknown --content '测试' >"$invalid_output_file" 2>&1; then
 	fail "unknown role unexpectedly succeeded"

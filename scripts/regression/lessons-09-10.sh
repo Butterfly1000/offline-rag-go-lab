@@ -26,7 +26,7 @@ GOCACHE=${GOCACHE:-$repo_root/.cache/go-build}
 export GOCACHE
 mkdir -p "$GOCACHE"
 
-expected_tokenizer_sha=${RECENT_CHAT_TOKENIZER_SHA256:-b6f5871f48c795dab37040781043d08c4b457c79c1a3f22a394f97cbbfe0a9b8}
+expected_tokenizer_sha=${RECENT_CHAT_TOKENIZER_SHA256:-f7c9b2dba4a296b1aa76c16a34b8225c0c118978400d4bb66bff0902d702f5b8}
 go run ./cmd/tokenizer-inspect --tokenizer "$tokenizer_path" --expect-sha256 "$expected_tokenizer_sha" >/dev/null
 pass "tokenizer fingerprint matches $expected_tokenizer_sha"
 

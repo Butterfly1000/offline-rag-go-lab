@@ -9,6 +9,8 @@ import (
 	"github.com/sugarme/tokenizer/model/wordlevel"
 )
 
+const qwenTokenizerSHA256 = "f7c9b2dba4a296b1aa76c16a34b8225c0c118978400d4bb66bff0902d702f5b8"
+
 func TestLoadCounterFailsWhenTokenizerFileDoesNotExist(t *testing.T) {
 	missingPath := filepath.Join(t.TempDir(), "tokenizer.json")
 
@@ -44,6 +46,7 @@ func TestCounterUsesLoadedTokenizerToCountText(t *testing.T) {
 }
 
 func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
+	assertQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
@@ -53,12 +56,13 @@ func TestQwenCounterDoesNotDropChineseAroundBackreferencePattern(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 41 || len(tokens) != count || len(ids) != count {
-		t.Fatalf("CountText() count=%d tokens=%d ids=%d, want 41", count, len(tokens), len(ids))
+	if count != 31 || len(tokens) != count || len(ids) != count {
+		t.Fatalf("CountText() count=%d tokens=%d ids=%d, want 31", count, len(tokens), len(ids))
 	}
 }
 
 func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
+	assertQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
@@ -74,6 +78,9 @@ func TestQwenCounterCountsSingleChineseAddedToken(t *testing.T) {
 	if count != 1 || len(tokens) != 1 || len(ids) != 1 {
 		id, found := counter.tokenizer.TokenToId("我")
 		t.Fatalf("CountText(我) count=%d tokens=%v ids=%v raw=%v token_id=%d found=%t, want one added token", count, tokens, ids, raw.Tokens, id, found)
+	}
+	if ids[0] != 35946 {
+		t.Fatalf("CountText(我) ids=%v, want [35946]", ids)
 	}
 }
 
@@ -97,17 +104,24 @@ func TestAddedVocabularySelectsLeftmostLongestMatches(t *testing.T) {
 	}
 }
 
-func TestQwenCounterKeepsSeparatedChineseAddedTokens(t *testing.T) {
+func TestQwenCounterKeepsSeparatedChineseTokens(t *testing.T) {
+	assertQwenTokenizerAsset(t)
 	counter, err := LoadCounter(qwenTokenizerTestPath())
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, tokens, _, err := counter.CountText("我a未")
+	count, tokens, ids, err := counter.CountText("我a未")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tokens) != 3 || tokens[0] != "我" || tokens[1] != "a" || tokens[2] != "未" {
-		t.Fatalf("tokens = %#v, want [我 a 未]", tokens)
+	if count != 3 || len(tokens) != 3 || len(ids) != 3 {
+		t.Fatalf("CountText(我a未) count=%d tokens=%d ids=%d, want three tokens", count, len(tokens), len(ids))
+	}
+	wantIDs := []int{35946, 64, 38342}
+	for index, want := range wantIDs {
+		if ids[index] != want {
+			t.Fatalf("CountText(我a未) ids=%v, want %v", ids, wantIDs)
+		}
 	}
 }
 
@@ -116,4 +130,16 @@ func qwenTokenizerTestPath() string {
 		return value
 	}
 	return filepath.Join("..", "..", "assets", "tokenizers", "qwen2", "tokenizer.json")
+}
+
+func assertQwenTokenizerAsset(t *testing.T) {
+	t.Helper()
+
+	summary, err := InspectFile(qwenTokenizerTestPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := VerifySHA256(summary.SHA256, qwenTokenizerSHA256); err != nil {
+		t.Fatalf("%v; token-count golden values are tied to this exact tokenizer asset", err)
+	}
 }
