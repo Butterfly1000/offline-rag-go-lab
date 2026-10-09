@@ -27,6 +27,15 @@
 - 实践实现度：38 / 78。
 - 现有已实现课程中待学习确认：15 节。
 
+### 理论热身旁路
+
+当前另有一条不改变 L01-L78 正式状态的理论热身线：
+
+- 入口：最小 RAG 闭环与早期 mock gateway。
+- 方式：每次一个小段，以生产概念为主，随时提问。
+- 当前断点：[RAG Theory Learning Checkpoint](00-rag-theory-learning-checkpoint.md)。
+- 下一教学点：Qdrant 如何比较 Query Vector 与 Chunk Vector 的相似度。
+
 ## 2. 已学习能力
 
 ### L01-L12：Tokenizer、Prompt 与 Token Budget

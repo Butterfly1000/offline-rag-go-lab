@@ -90,10 +90,62 @@ http://127.0.0.1:18092
 
 recent-chat 是一条独立的“最近窗口”真实实现路径，监听 `http://127.0.0.1:18093`。
 
-Apply schema:
+### Docker 启动真实依赖
+
+这条实战路径先用 Docker 跑两个有状态依赖：
+
+- `mysql`：事实源，保存聊天消息、Session Summary、Memory Item、文档版本和 chunk manifest。
+- `qdrant`：可重建向量索引，保存 memory/document embedding。
+
+在一台新的 Mac 上，先做终端预检：
+
+```bash
+sh scripts/bootstrap/check-local-runtime.sh
+```
+
+它只确认 `git`、`go`、`docker`、`docker compose`、本地配置、tokenizer 资产和本地端口状态，不会启动容器，也不会写数据库。
+
+Ollama 建议继续跑在宿主机，端口保持 `11434`：
+
+```bash
+ollama serve
+ollama pull qwen:7b
+ollama pull bge-m3
+```
+
+启动 MySQL 和 Qdrant：
+
+```bash
+docker compose up -d mysql qdrant
+sh scripts/bootstrap/check-local-runtime.sh
+```
+
+MySQL 首次初始化会创建 `offline_rag` 库，并导入：
+
+- `sql/recentchat_messages.sql`
+- `sql/session_summaries.sql`
+- `sql/memory_items.sql`
+- `sql/document_ingestion.sql`
+
+生成本地 app 配置：
+
+```bash
+cp config/recent-chat.env.docker.example config/recent-chat.env
+```
+
+检查真实依赖：
+
+```bash
+go run ./cmd/rag-real-loop-demo check --config config/recent-chat.env
+```
+
+如果不用 Docker，而是连接已有 MySQL，可以手动导入 schema：
 
 ```sql
 SOURCE sql/recentchat_messages.sql;
+SOURCE sql/session_summaries.sql;
+SOURCE sql/memory_items.sql;
+SOURCE sql/document_ingestion.sql;
 ```
 
 Config:
